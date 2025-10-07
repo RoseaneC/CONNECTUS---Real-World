@@ -10,7 +10,3 @@
 ### Como executar
 1. Backend: `cd backend && python main.py`
 2. Frontend: `cd frontend && npm run dev`
-
-### Login padrão
-- Usuário: roseane
-- Senha: 123456
