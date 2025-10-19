@@ -10,9 +10,9 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
-from app.core.database import get_db
-from app.models.user import User
+from backend.app.core.config import settings
+from backend.app.core.database import get_db
+from backend.app.models.user import User
 
 # Configuração JWT
 SECRET_KEY = settings.SECRET_KEY

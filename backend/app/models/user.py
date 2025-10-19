@@ -4,8 +4,7 @@ Modelo de usuário para Connectus
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Numeric, Text
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from app.core.database import Base
+from backend.app.core.database import Base
 
 class User(Base):
     __tablename__ = "users"
@@ -36,21 +35,11 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_login = Column(DateTime(timezone=True), nullable=True)
     
-    # Campos removidos - não estamos mais usando Stellar SDK
-    
     # Campos de estatísticas
     missions_completed = Column(Integer, default=0)
     posts_created = Column(Integer, default=0)
     likes_received = Column(Integer, default=0)
     comments_made = Column(Integer, default=0)
-    
-    # Relacionamentos
-    missions = relationship("UserMission", back_populates="user")
-    posts = relationship("Post", back_populates="author")
-    post_likes = relationship("PostLike", back_populates="user")
-    post_comments = relationship("PostComment", back_populates="user")
-    chat_messages = relationship("ChatMessage", back_populates="user")
-    ranking = relationship("UserRanking", back_populates="user", uselist=False)
     
     def __repr__(self):
         return f"<User(id={self.id}, nickname='{self.nickname}')>"
