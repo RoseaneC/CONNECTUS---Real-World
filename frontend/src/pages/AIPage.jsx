@@ -27,6 +27,7 @@ import { toast } from 'react-hot-toast'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import MarkdownMessage from '../components/MarkdownMessage'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 
@@ -65,13 +66,19 @@ const AIPage = () => {
   // Auto-scroll para última mensagem
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, isLoading])
 
   const loadConversationHistory = async () => {
     try {
       const response = await api.get('/ai/history?limit=50')
       setConversationHistory(response.data.conversations || [])
     } catch (error) {
+      const status = error?.response?.status
+      if (status === 404) {
+        // endpoint não existe no backend atual — ignore silenciosamente
+        setConversationHistory([])
+        return
+      }
       console.error('Erro ao carregar histórico:', error)
     }
   }
@@ -81,6 +88,12 @@ const AIPage = () => {
       const response = await api.get('/ai/favorites')
       setFavorites(response.data.favorites || [])
     } catch (error) {
+      const status = error?.response?.status
+      if (status === 404) {
+        // endpoint não existe no backend atual — ignore silenciosamente
+        setFavorites([])
+        return
+      }
       console.error('Erro ao carregar favoritos:', error)
     }
   }
@@ -109,18 +122,18 @@ const AIPage = () => {
     setIsLoading(true)
 
     try {
-      const response = await api.post('/ai/chat', {
-        prompt: message,
+      const response = await api.post('/ai/chat-public', {
+        message: message,
         category: category || activeTab
       })
 
       const aiMessage = {
         id: Date.now() + 1,
         type: 'ai',
-        content: response.data.content,
-        category: response.data.category,
-        suggestions: response.data.suggestions,
-        timestamp: response.data.timestamp
+        content: response.data.reply,
+        category: response.data.category || activeTab,
+        suggestions: response.data.suggestions || [],
+        timestamp: new Date().toISOString()
       }
 
       setMessages(prev => [...prev, aiMessage])
@@ -201,62 +214,62 @@ const AIPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-[calc(100vh-4rem)] bg-gray-900 p-4">
+      <div className="max-w-6xl mx-auto h-full">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <Bot className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">Connectus AI</h1>
-                <p className="text-dark-400">Seu assistente educacional inteligente</p>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">VEXA IA</h1>
+                <p className="text-dark-400 text-xs sm:text-sm md:text-base">Seu assistente educacional inteligente</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-wrap">
               <Button
                 variant="ghost"
                 onClick={() => setShowHistory(!showHistory)}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm"
               >
-                <History className="w-4 h-4" />
-                <span>Histórico</span>
+                <History className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Histórico</span>
               </Button>
               
               <Button
                 variant="ghost"
                 onClick={() => setShowFavorites(!showFavorites)}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm"
               >
-                <Star className="w-4 h-4" />
-                <span>Favoritos</span>
+                <Star className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Favoritos</span>
               </Button>
               
               <Button
                 variant="ghost"
                 onClick={clearChat}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm"
               >
-                <RefreshCw className="w-4 h-4" />
-                <span>Limpar</span>
+                <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Limpar</span>
               </Button>
             </div>
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
           {/* Sidebar */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-1 space-y-4"
+            className="lg:col-span-1 space-y-4 order-2 lg:order-1"
           >
             {/* Categorias */}
             <Card variant="cyber" className="p-4">
@@ -324,9 +337,9 @@ const AIPage = () => {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-3"
+            className="lg:col-span-3 order-1 lg:order-2"
           >
-            <Card variant="cyber" className="h-[600px] flex flex-col">
+            <Card variant="cyber" className="h-full flex flex-col">
               {/* Header do Chat */}
               <div className="flex items-center justify-between p-4 border-b border-dark-600">
                 <div className="flex items-center space-x-3">
@@ -350,7 +363,7 @@ const AIPage = () => {
               </div>
 
               {/* Mensagens */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto px-3 space-y-3">
                 {messages.length === 0 && (
                   <div className="text-center py-8">
                     <Bot className="w-16 h-16 text-dark-400 mx-auto mb-4" />
@@ -370,13 +383,17 @@ const AIPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className={`max-w-[80%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
-                      <div className={`p-4 rounded-lg ${
+                    <div className={`max-w-[800px] w-fit ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
+                      <div className={`rounded-2xl px-4 py-3 ${
                         message.type === 'user'
-                          ? 'bg-primary-500 text-white'
-                          : 'bg-dark-700 text-white'
+                          ? 'bg-sky-600 text-white'
+                          : 'bg-slate-700 text-slate-100'
                       }`}>
-                        <p className="whitespace-pre-wrap">{message.content}</p>
+                        {message.type === 'ai' ? (
+                          <MarkdownMessage text={message.content} />
+                        ) : (
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                        )}
                         
                         {message.type === 'ai' && message.suggestions && (
                           <div className="mt-3 space-y-2">
@@ -424,10 +441,10 @@ const AIPage = () => {
                     animate={{ opacity: 1 }}
                     className="flex justify-start"
                   >
-                    <div className="bg-dark-700 p-4 rounded-lg">
+                    <div className="bg-slate-700 p-4 rounded-2xl">
                       <div className="flex items-center space-x-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400"></div>
-                        <span className="text-dark-300">IA está pensando...</span>
+                        <span className="text-slate-300">VEXA está digitando...</span>
                       </div>
                     </div>
                   </motion.div>
@@ -437,22 +454,22 @@ const AIPage = () => {
               </div>
 
               {/* Input */}
-              <div className="p-4 border-t border-dark-600">
-                <form onSubmit={handleSubmit} className="flex space-x-3">
+              <div className="mt-3 flex gap-2 px-3 border-t border-dark-600 pt-3">
+                <form onSubmit={handleSubmit} className="flex gap-2 w-full">
                   <Input
                     ref={inputRef}
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     placeholder={`Digite sua ${categories[activeTab].name.toLowerCase()}...`}
-                    className="flex-1"
+                    className="flex-1 text-sm sm:text-base"
                     disabled={isLoading}
                   />
                   <Button
                     type="submit"
                     disabled={!inputMessage.trim() || isLoading}
-                    className="px-6"
+                    className="px-3 sm:px-6"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-3 h-3 sm:w-4 sm:h-4" />
                   </Button>
                 </form>
               </div>

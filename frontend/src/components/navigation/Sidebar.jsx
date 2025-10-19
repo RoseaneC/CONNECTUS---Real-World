@@ -18,7 +18,7 @@ const Sidebar = () => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Perfil', href: '/profile', icon: User },
-    { name: 'IA Assistant', href: '/ai', icon: Bot, special: true },
+    { name: 'VEXA IA', href: '/ai', icon: Bot, special: true },
     { name: 'Missões', href: '/missions', icon: Target },
     { name: 'Timeline', href: '/timeline', icon: MessageSquare },
     { name: 'Ranking', href: '/ranking', icon: Trophy },

@@ -1,8 +1,17 @@
+# Node / React
 node_modules/
+dist/
+.vite/
+.env
+.env.local
+
+# Python / FastAPI
 __pycache__/
 *.pyc
-.env
+connectus.db
 .venv/
 venv/
-*.log
+
+# Sistema
 .DS_Store
+Thumbs.db

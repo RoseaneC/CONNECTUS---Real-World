@@ -34,17 +34,18 @@ except Exception as e:
     # Não falhar o servidor por falta do router; apenas log
     print("[VEXA] Aviso: router /ai não carregado ->", e)
 
-# Incluir routers de auth já existentes SEM alterar nada
-# Tente ambas variantes se existirem; se não existirem, ignore silenciosamente
-for path_mod, prefix, tag in [
-    ("backend.routers.auth", "/auth", "auth"),
-    ("backend.app.api.routers.auth", "/auth", "auth"),
-    ("backend.app.api.routers.auth_routes", "/api/auth", "auth"),
-]:
-    try:
-        mod = __import__(path_mod, fromlist=["router"])
-        app.include_router(mod.router, prefix=prefix, tags=[tag])
-        print(f"[VEXA] Router {prefix} carregado com sucesso")
-    except Exception as e:
-        print(f"[VEXA] Aviso: router {prefix} não carregado -> {e}")
-        pass  # não quebrar; apenas seguir
+# Incluir router de auth com prefixo /auth (para compatibilidade com frontend)
+try:
+    from backend.routers.auth import router as auth_router
+    app.include_router(auth_router, prefix="/auth", tags=["auth"])
+    print("[VEXA] Router /auth carregado com sucesso")
+except Exception as e:
+    print(f"[VEXA] Aviso: router /auth não carregado -> {e}")
+
+# Incluir router de auth com prefixo /api/auth (para compatibilidade adicional)
+try:
+    from backend.app.api.routers.auth_routes import router as api_auth_router
+    app.include_router(api_auth_router, prefix="/api/auth", tags=["auth"])
+    print("[VEXA] Router /api/auth carregado com sucesso")
+except Exception as e:
+    print(f"[VEXA] Aviso: router /api/auth não carregado -> {e}")

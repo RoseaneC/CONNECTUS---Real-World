@@ -87,6 +87,14 @@ class Settings:
         self.AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "900"))
         self.AI_STREAM = os.getenv("AI_STREAM", "true").lower() in ("1", "true", "yes", "on")
         
+        # Configurações VEXA IA - Escrita
+        self.VEXA_SYSTEM_PROMPT = os.getenv("VEXA_SYSTEM_PROMPT", "Você é a VEXA IA. Responda em português do Brasil, com clareza, parágrafos curtos e tópicos quando útil.")
+        self.VEXA_TEMPERATURE = float(os.getenv("VEXA_TEMPERATURE", "0.5"))
+        self.VEXA_TOP_P = float(os.getenv("VEXA_TOP_P", "0.9"))
+        self.VEXA_PRESENCE_PENALTY = float(os.getenv("VEXA_PRESENCE_PENALTY", "0.1"))
+        self.VEXA_FREQUENCY_PENALTY = float(os.getenv("VEXA_FREQUENCY_PENALTY", "0.2"))
+        self.VEXA_MAX_TOKENS = int(os.getenv("VEXA_MAX_TOKENS", "800"))
+        
         # Sanitizar e validar chave API
         self.OPENAI_API_KEY = get_openai_key()
         
@@ -107,3 +115,11 @@ class Settings:
 
 # Instância global
 settings = Settings()
+
+# Exportar variáveis VEXA para importação direta
+VEXA_SYSTEM_PROMPT = settings.VEXA_SYSTEM_PROMPT
+VEXA_TEMPERATURE = settings.VEXA_TEMPERATURE
+VEXA_TOP_P = settings.VEXA_TOP_P
+VEXA_PRESENCE_PENALTY = settings.VEXA_PRESENCE_PENALTY
+VEXA_FREQUENCY_PENALTY = settings.VEXA_FREQUENCY_PENALTY
+VEXA_MAX_TOKENS = settings.VEXA_MAX_TOKENS
