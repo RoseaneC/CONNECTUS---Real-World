@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..core.database import get_db
-from ..schemas.post import PostCreate, PostUpdate, PostResponse, PostCommentCreate, PostCommentResponse
+from ..schemas.post import PostCreate, PostUpdate, PostResponse, PostCommentCreate, PostCommentResponse, PostOut
 from ..services.post_service import PostService
 from ..core.auth import get_current_active_user
+from ..models.user import User
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,16 +13,25 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
-@router.post("/", response_model=PostResponse)
-async def create_post(
+@router.post("/", response_model=PostOut)
+async def create_post_slash(
     post_data: PostCreate,
-    current_user: dict = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Cria um novo post"""
+    """Cria um novo post (com barra)"""
+    return await create_post_no_slash(post_data, current_user, db)
+
+@router.post("", response_model=PostOut)
+async def create_post_no_slash(
+    post_data: PostCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Cria um novo post (sem barra)"""
     try:
         post_service = PostService(db)
-        post = post_service.create_post(current_user["id"], post_data)
+        post = post_service.create_post(current_user.id, post_data)
         
         if not post:
             raise HTTPException(
@@ -29,8 +39,11 @@ async def create_post(
                 detail="Erro ao criar post"
             )
         
-        logger.info(f"Post criado pelo usuário {current_user['id']}")
-        return post
+        # Garantir que o relacionamento author está carregado
+        _ = post.author.id  # força lazy-load, se necessário
+        
+        logger.info(f"post_created id=%s user=%s", post.id, current_user.id)
+        return PostOut.model_validate(post)
         
     except HTTPException:
         raise
@@ -66,13 +79,13 @@ async def get_timeline(
 async def get_my_posts(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    current_user: dict = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Obtém posts do usuário atual"""
     try:
         post_service = PostService(db)
-        posts = post_service.get_user_posts(current_user["id"], limit, offset)
+        posts = post_service.get_user_posts(current_user.id, limit, offset)
         
         if not posts:
             return []
@@ -140,13 +153,13 @@ async def get_post(
 async def update_post(
     post_id: int,
     post_data: PostUpdate,
-    current_user: dict = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Atualiza um post"""
     try:
         post_service = PostService(db)
-        post = post_service.update_post(post_id, current_user["id"], post_data)
+        post = post_service.update_post(post_id, current_user.id, post_data)
         
         if not post:
             raise HTTPException(
@@ -154,7 +167,7 @@ async def update_post(
                 detail="Post não encontrado ou não pertence ao usuário"
             )
         
-        logger.info(f"Post {post_id} atualizado pelo usuário {current_user['id']}")
+        logger.info(f"Post {post_id} atualizado pelo usuário {current_user.id}")
         return post
         
     except HTTPException:
@@ -170,13 +183,13 @@ async def update_post(
 @router.delete("/{post_id}")
 async def delete_post(
     post_id: int,
-    current_user: dict = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Deleta um post"""
     try:
         post_service = PostService(db)
-        success = post_service.delete_post(post_id, current_user["id"])
+        success = post_service.delete_post(post_id, current_user.id)
         
         if not success:
             raise HTTPException(
@@ -184,7 +197,7 @@ async def delete_post(
                 detail="Post não encontrado ou não pertence ao usuário"
             )
         
-        logger.info(f"Post {post_id} deletado pelo usuário {current_user['id']}")
+        logger.info(f"Post {post_id} deletado pelo usuário {current_user.id}")
         return {"message": "Post deletado com sucesso"}
         
     except HTTPException:
@@ -200,13 +213,13 @@ async def delete_post(
 @router.post("/{post_id}/like")
 async def like_post(
     post_id: int,
-    current_user: dict = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Curtir/descurtir um post"""
     try:
         post_service = PostService(db)
-        success = post_service.like_post(current_user["id"], post_id)
+        success = post_service.like_post(current_user.id, post_id)
         
         if not success:
             raise HTTPException(
@@ -230,13 +243,13 @@ async def like_post(
 async def comment_post(
     post_id: int,
     comment_data: PostCommentCreate,
-    current_user: dict = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Comentar em um post"""
     try:
         post_service = PostService(db)
-        comment = post_service.comment_post(current_user["id"], post_id, comment_data)
+        comment = post_service.comment_post(current_user.id, post_id, comment_data)
         
         if not comment:
             raise HTTPException(
@@ -244,7 +257,7 @@ async def comment_post(
                 detail="Erro ao comentar no post"
             )
         
-        logger.info(f"Comentário adicionado ao post {post_id} pelo usuário {current_user['id']}")
+        logger.info(f"Comentário adicionado ao post {post_id} pelo usuário {current_user.id}")
         return comment
         
     except HTTPException:
@@ -281,7 +294,7 @@ async def get_post_comments(
 @router.post("/{post_id}/share")
 async def share_post(
     post_id: int,
-    current_user: dict = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Compartilhar um post"""

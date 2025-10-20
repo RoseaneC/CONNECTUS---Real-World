@@ -4,12 +4,37 @@ from typing import List, Optional
 from ..core.database import get_db
 from ..schemas.ranking import UserRankingResponse, RankingResponse
 from ..services.ranking_service import RankingService
-from ..core.auth import get_current_active_user
+from ..core.auth import get_current_active_user, get_current_user_optional
+from ..models.user import User
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ranking", tags=["ranking"])
+
+
+@router.get("", response_model=RankingResponse)
+async def get_ranking(
+    period: str = Query("weekly", pattern="^(weekly|monthly|all)$"),
+    user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
+    """Obtém ranking geral (endpoint raiz - tolerante a anônimos)"""
+    try:
+        ranking_service = RankingService(db)
+        # Mapear period para o tipo de ranking
+        ranking_type = "overall" if period == "all" else "overall"
+        ranking = ranking_service.get_ranking_page(ranking_type, 1, 20)
+        return ranking
+        
+    except Exception as e:
+        logger.error(f"Erro ao obter ranking: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro interno do servidor"
+        )
+
+
 
 
 @router.get("/overall", response_model=RankingResponse)
@@ -94,27 +119,27 @@ async def get_mission_ranking(
 
 @router.get("/my-position")
 async def get_my_position(
-    ranking_type: str = Query("overall", regex="^(overall|xp|tokens|missions)$"),
-    current_user: dict = Depends(get_current_active_user),
+    ranking_type: str = Query("overall", pattern="^(overall|xp|tokens|missions)$"),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Obtém posição do usuário no ranking"""
     try:
         ranking_service = RankingService(db)
-        position = ranking_service.get_user_position(current_user["id"], ranking_type)
+        position = ranking_service.get_user_position(current_user.id, ranking_type)
         
         if position is None:
             return {
-                "user_id": current_user["id"],
-                "nickname": current_user["nickname"],
+                "user_id": current_user.id,
+                "nickname": current_user.nickname,
                 "ranking_type": ranking_type,
                 "position": None,
                 "message": "Usuário não está no ranking"
             }
         
         return {
-            "user_id": current_user["id"],
-            "nickname": current_user["nickname"],
+            "user_id": current_user.id,
+            "nickname": current_user.nickname,
             "ranking_type": ranking_type,
             "position": position
         }
@@ -129,13 +154,13 @@ async def get_my_position(
 
 @router.get("/my-ranking", response_model=UserRankingResponse)
 async def get_my_ranking(
-    current_user: dict = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Obtém dados de ranking do usuário atual"""
     try:
         ranking_service = RankingService(db)
-        user_ranking = ranking_service.get_user_ranking(current_user["id"])
+        user_ranking = ranking_service.get_user_ranking(current_user.id)
         
         if not user_ranking:
             raise HTTPException(
@@ -175,13 +200,13 @@ async def get_leaderboard(
 
 @router.get("/achievements")
 async def get_user_achievements(
-    current_user: dict = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Obtém conquistas do usuário"""
     try:
         ranking_service = RankingService(db)
-        achievements = ranking_service.get_user_achievements(current_user["id"])
+        achievements = ranking_service.get_user_achievements(current_user.id)
         return achievements
         
     except Exception as e:
@@ -194,7 +219,7 @@ async def get_user_achievements(
 
 @router.post("/update-all")
 async def update_all_rankings(
-    current_user: dict = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Atualiza todos os rankings (apenas para administradores)"""

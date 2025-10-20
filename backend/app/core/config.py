@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     
     # Configurações OpenAI (opcional)
     OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o-mini"  # mantenha leve
+    VEXA_SYSTEM_PROMPT: str = "Você é a VEXA IA, assistente educacional da ConnectUS: clara, gentil e objetiva."
     
     class Config:
         env_file = ".env"

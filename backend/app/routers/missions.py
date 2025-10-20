@@ -13,11 +13,19 @@ router = APIRouter(prefix="/missions", tags=["missions"])
 
 
 @router.get("/", response_model=List[MissionResponse])
-async def get_all_missions(
+async def get_all_missions_slash(
     active_only: bool = True,
     db: Session = Depends(get_db)
 ):
-    """Obtém todas as missões disponíveis"""
+    """Obtém todas as missões disponíveis (com barra)"""
+    return await get_all_missions_no_slash(active_only, db)
+
+@router.get("", response_model=List[MissionResponse])
+async def get_all_missions_no_slash(
+    active_only: bool = True,
+    db: Session = Depends(get_db)
+):
+    """Obtém todas as missões disponíveis (sem barra)"""
     try:
         mission_service = MissionService(db)
         missions = mission_service.get_all_missions(active_only)

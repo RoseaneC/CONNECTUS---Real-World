@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from ..core.database import Base
+from app.core.database import Base
 
 
 class Post(Base):
@@ -68,6 +68,7 @@ class PostComment(Base):
     
     def __repr__(self):
         return f"<PostComment(id={self.id}, user_id={self.user_id}, content='{self.content[:50]}...')>"
+
 
 
 

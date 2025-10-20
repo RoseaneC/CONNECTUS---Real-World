@@ -1,11 +1,12 @@
 // frontend/src/services/api.js
 import axios from "axios";
 
-const BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 export const api = axios.create({
   baseURL: BASE,
   timeout: 30000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -38,8 +39,23 @@ api.interceptors.response.use(
         window.showToast("Erro de conexão. Verifique se o servidor está rodando.", "error");
       }
     } else if (error.response.status === 401 && !originalRequest._retry) {
-      // Tentar renovar token se não for login/registro
+      // Verificar se é um endpoint tolerante (AI/Ranking GETs)
       const url = originalRequest?.url || '';
+      const isTolerantEndpoint = (
+        url.includes('/ai/history') || 
+        url.includes('/ai/favorites') || 
+        url.includes('/ai/stats') || 
+        url.includes('/ranking') ||
+        url.includes('/missions')
+      ) && originalRequest.method === 'get';
+      
+      if (isTolerantEndpoint) {
+        // Para endpoints tolerantes, não redirecionar para login
+        console.log("Endpoint tolerante sem auth - continuando normalmente");
+        return Promise.reject(error);
+      }
+      
+      // Tentar renovar token se não for login/registro
       if (!url.includes('/auth/login') && !url.includes('/auth/register') && !url.includes('/auth/refresh')) {
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
@@ -148,6 +164,14 @@ export const chatAPI = {
     api.get(`/chat/rooms/${roomId}/search?q=${query}&limit=${limit}`),
   getRoomStats: (roomId) => api.get(`/chat/rooms/${roomId}/stats`),
   getRoomMembers: (roomId) => api.get(`/chat/rooms/${roomId}/members`)
+}
+
+// API de AI
+export const aiAPI = {
+  getHistory: (limit = 50) => api.get(`/ai/history?limit=${limit}`),
+  getFavorites: () => api.get('/ai/favorites'),
+  getStats: () => api.get('/ai/stats'),
+  chatPublic: (message) => api.post('/ai/chat-public', { message })
 }
 
 // API de Ranking

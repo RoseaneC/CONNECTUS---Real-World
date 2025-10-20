@@ -44,7 +44,7 @@ except Exception as e:
 
 # Incluir router de auth com prefixo /api/auth (para compatibilidade adicional)
 try:
-    from backend.app.api.routers.auth_routes import router as api_auth_router
+    from app.api.routers.auth_routes import router as api_auth_router
     app.include_router(api_auth_router, prefix="/api/auth", tags=["auth"])
     print("[VEXA] Router /api/auth carregado com sucesso")
 except Exception as e:

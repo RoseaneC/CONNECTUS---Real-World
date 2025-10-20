@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, Numeric, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from ..core.database import Base
+from app.core.database import Base
 
 
 class UserRanking(Base):
@@ -41,6 +41,7 @@ class UserRanking(Base):
         engagement_score = (self.posts_created * 5 + self.likes_received) * 0.2
         
         return xp_score + token_score + mission_score + engagement_score
+
 
 
 

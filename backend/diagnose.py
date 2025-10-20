@@ -50,3 +50,4 @@ print("\n=== FIM DO DIAGNÓSTICO ===")
 
 
 
+

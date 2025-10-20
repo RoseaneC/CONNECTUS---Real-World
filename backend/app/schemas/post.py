@@ -1,6 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
+
+
+class AuthorOut(BaseModel):
+    id: int
+    nickname: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostBase(BaseModel):
@@ -39,6 +46,15 @@ class PostCommentResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+class PostOut(BaseModel):
+    id: int
+    content: str
+    created_at: datetime  # aceitar datetime
+    author: AuthorOut
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostResponse(PostBase):

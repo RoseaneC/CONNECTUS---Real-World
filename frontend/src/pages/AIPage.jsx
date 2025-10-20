@@ -143,7 +143,13 @@ const AIPage = () => {
       
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error)
-      toast.error('Erro ao enviar mensagem para IA')
+      
+      // Tratamento específico para erro 503 da VEXA
+      if (error.response?.status === 503) {
+        toast.error('VEXA indisponível no momento. Verifique a configuração da IA no servidor.')
+      } else {
+        toast.error('Erro ao enviar mensagem para IA')
+      }
     } finally {
       setIsLoading(false)
     }

@@ -9,7 +9,7 @@ import uvicorn
 
 from app.core.config import settings
 from app.core.database import create_tables
-from app.routers import auth, posts, missions, chat, ranking, users
+from app.routers import auth, posts, missions, chat, ranking, users, ai, profile
 
 # Criar aplicação FastAPI
 app = FastAPI(
@@ -19,12 +19,33 @@ app = FastAPI(
     debug=settings.DEBUG
 )
 
+# Evitar redirect automático 307 por barra final
+# (Starlette/FastAPI: desliga o redirect e nós oferecemos as duas rotas)
+try:
+    app.router.redirect_slashes = False
+except Exception:
+    pass
+
 # Configurar CORS
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+print(f"🌐 CORS configurado para origins: {origins}")
+print(f"🚀 Servidor iniciando em: http://127.0.0.1:8000")
+
+# Log do status da VEXA
+if settings.OPENAI_API_KEY:
+    print(f"🤖 VEXA: Configurada com modelo {settings.OPENAI_MODEL}")
+else:
+    print("🤖 VEXA: Rodando em modo limitado (sem IA) - configure OPENAI_API_KEY para ativar")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.DEBUG else settings.ALLOWED_ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -35,6 +56,8 @@ app.include_router(missions.router)
 app.include_router(chat.router)
 app.include_router(ranking.router)
 app.include_router(users.router)
+app.include_router(ai.router)
+app.include_router(profile.router)
 
 # Criar tabelas do banco de dados automaticamente
 try:
@@ -56,11 +79,7 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Verificação de saúde da API"""
-    return {
-        "status": "healthy",
-        "app": settings.APP_NAME,
-        "version": settings.VERSION
-    }
+    return {"status": "ok"}
 
 @app.post("/init-db")
 async def init_database():

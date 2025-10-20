@@ -6,13 +6,13 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 import hashlib
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
-from backend.app.core.config import settings
-from backend.app.core.database import get_db
-from backend.app.models.user import User
+from app.core.config import settings
+from app.core.database import get_db
+from app.models.user import User
 
 # Configuração JWT
 SECRET_KEY = settings.SECRET_KEY
@@ -95,7 +95,7 @@ async def get_current_user(
     """Obter usuário atual a partir do token JWT"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="Not authenticated",
         headers={"WWW-Authenticate": "Bearer"},
     )
     
@@ -118,9 +118,38 @@ async def get_current_user(
     
     return user
 
+async def get_current_user_optional(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """Obter usuário atual opcionalmente (retorna None se não autenticado)"""
+    try:
+        # Tentar obter o token do header Authorization
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return None
+        
+        token = auth_header.split(" ")[1]
+        payload = verify_token(token)
+        if payload is None:
+            return None
+        
+        user_id: int = payload.get("sub")
+        if user_id is None:
+            return None
+            
+        user = db.query(User).filter(User.id == user_id).first()
+        return user
+        
+    except Exception:
+        return None
+
 async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
     """Obter usuário ativo atual"""
     if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Not enough permissions"
+        )
     return current_user
 

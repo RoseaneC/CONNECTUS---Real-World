@@ -14,15 +14,15 @@ from app.core.config import settings
 
 def main():
     print("🚀 Iniciando servidor Connectus...")
-    print(f"🌐 URL: http://localhost:8000")
-    print(f"📚 Docs: http://localhost:8000/docs")
-    print(f"🔧 Health: http://localhost:8000/health")
+    print(f"🌐 URL: http://127.0.0.1:8000")
+    print(f"📚 Docs: http://127.0.0.1:8000/docs")
+    print(f"🔧 Health: http://127.0.0.1:8000/health")
     print(f"🐛 Debug: {settings.DEBUG}")
     
     try:
         uvicorn.run(
             "app.main:app",
-            host="0.0.0.0",
+            host="127.0.0.1",
             port=8000,
             reload=settings.DEBUG,
             log_level="info"

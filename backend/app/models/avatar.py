@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.dialects.sqlite import JSON
-from backend.app.core.database import Base
+from app.core.database import Base
 
 class UserAvatar(Base):
     __tablename__ = "user_avatar"

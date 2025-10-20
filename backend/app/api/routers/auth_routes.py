@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 
 # Importar do sistema real
-from backend.app.core.database import get_db
-from backend.app.core.auth import verify_password, create_access_token
-from backend.app.models.user import User
+from app.core.database import get_db
+from app.core.auth import verify_password, create_access_token
+from app.models.user import User
 
 router = APIRouter(tags=["auth"])
 

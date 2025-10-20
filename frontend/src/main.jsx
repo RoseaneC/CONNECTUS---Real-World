@@ -4,6 +4,14 @@ import App from "./App";
 import "./index.css";
 import ErrorBoundary from "./components/ErrorBoundary";
 
+// Verificar configuração de ambiente
+if (!import.meta.env.VITE_API_URL) {
+  console.warn("⚠️ VITE_API_URL não configurado!");
+  console.log("💡 Crie um arquivo .env.local baseado no .env.example:");
+  console.log("   cp .env.example .env.local");
+  console.log("   # Edite .env.local com suas configurações");
+}
+
 const container = document.getElementById("root");
 if (!container) {
   throw new Error("Root element not found (#root)");
