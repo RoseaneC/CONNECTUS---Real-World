@@ -20,3 +20,7 @@ Thumbs.db
 backend/*.db
 backend/*.db-journal
 
+
+# Frontend build
+frontend/dist/
+
