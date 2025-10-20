@@ -15,3 +15,8 @@ venv/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Local dev DB
+backend/*.db
+backend/*.db-journal
+
