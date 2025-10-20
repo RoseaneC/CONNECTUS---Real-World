@@ -184,11 +184,21 @@ const Header = () => {
 
           {/* Avatar do usuário */}
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center">
-              <span className="text-sm font-bold text-white">
-                {user?.nickname?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            </div>
+            {/* [CONNECTUS PATCH] avatar global */}
+            {user?.avatar_png_url ? (
+              <img
+                src={user.avatar_png_url}
+                alt="Avatar"
+                className="w-8 h-8 rounded-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = 'none'; /* cai no fallback abaixo */ }}
+              />
+            ) : (
+              <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center">
+                <span className="text-sm font-bold text-white">
+                  {user?.nickname?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+            )}
             <div className="hidden md:block">
               <p className="text-sm font-medium text-white">
                 {user?.nickname || 'Usuário'}

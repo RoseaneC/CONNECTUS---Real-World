@@ -191,3 +191,27 @@ export const rankingAPI = {
   getAchievements: () => api.get('/ranking'),
   getStats: () => api.get('/ranking')
 }
+
+// [CONNECTUS PATCH] Avatar API helpers — NÃO mexer no resto do arquivo
+export async function getAvatar() {
+  const res = await api.get('/avatars');
+  // Sem array: o backend retorna { glb_url, png_url }
+  // Normalize para SEMPRE devolver um objeto ou null.
+  const data = res?.data ?? null;
+  if (data && (typeof data === 'object')) {
+    return {
+      glb_url: data.glb_url ?? null,
+      png_url: data.png_url ?? null,
+    };
+  }
+  return { glb_url: null, png_url: null };
+}
+
+export async function updateProfileAvatar({ avatar_glb_url, avatar_png_url }) {
+  // Mantém contrato do backend: PUT /profile com as mesmas chaves
+  const res = await api.put('/profile', {
+    avatar_glb_url: avatar_glb_url ?? null,
+    avatar_png_url: avatar_png_url ?? null,
+  });
+  return res.data; // { glb_url, png_url }
+}
