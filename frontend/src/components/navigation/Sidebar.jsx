@@ -77,11 +77,21 @@ const Sidebar = () => {
       {/* Perfil do usuário */}
       <div className="p-4 border-t border-dark-700/50">
         <div className="flex items-center space-x-3 mb-4">
-          <div className="w-10 h-10 bg-gradient-to-r from-accent-500 to-accent-600 rounded-full flex items-center justify-center">
-            <span className="text-sm font-bold text-dark-900">
-              {user?.nickname?.charAt(0).toUpperCase() || 'U'}
-            </span>
-          </div>
+          {/* [CONNECTUS PATCH] avatar global */}
+          {user?.avatar_png_url ? (
+            <img
+              src={user.avatar_png_url}
+              alt="Avatar"
+              className="w-10 h-10 rounded-full object-cover"
+              onError={(e) => { e.currentTarget.style.display = 'none'; /* cai no fallback abaixo */ }}
+            />
+          ) : (
+            <div className="w-10 h-10 bg-gradient-to-r from-accent-500 to-accent-600 rounded-full flex items-center justify-center">
+              <span className="text-sm font-bold text-dark-900">
+                {user?.nickname?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">
               {user?.nickname || 'Usuário'}

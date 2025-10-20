@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Mail, Calendar, Coins, Trophy, Target, Edit3, X, Camera, Check } from 'lucide-react'
+import { User, Mail, Calendar, Coins, Trophy, Target, Edit3, X, Camera, Check, Sparkles } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useAuthStore } from '../stores/authStore'
-import { api } from '../services/api'
+import { api, getAvatar, updateProfileAvatar } from '../services/api'
+import ReadyPlayerMeModal from '../components/avatar/ReadyPlayerMeModal'
 
 const ProfilePage = () => {
   const { user, updateProfile } = useAuthStore()
   const [isEditing, setIsEditing] = useState(false)
-  const [showAvatarSelector, setShowAvatarSelector] = useState(false)
-  const [avatars, setAvatars] = useState([])
+  const [showRPM, setShowRPM] = useState(false)
+  // [CONNECTUS PATCH] Substituir qualquer "avatars" por currentAvatar (objeto)
+  const [currentAvatar, setCurrentAvatar] = useState({ glb_url: null, png_url: null });
+  const featureRPM = String(import.meta.env.VITE_FEATURE_RPM).toLowerCase() === 'true';
   const [editData, setEditData] = useState({
     full_name: user?.full_name || '',
     email: user?.email || '',
@@ -21,18 +24,27 @@ const ProfilePage = () => {
     avatar: user?.avatar || 'avatar_1'
   })
 
-  // Carregar avatares disponíveis
+  // [CONNECTUS PATCH] Carregar avatar atual do Ready Player Me
   useEffect(() => {
-    const loadAvatars = async () => {
+    let mounted = true;
+    (async () => {
       try {
-        const response = await api.get('/avatars')
-        setAvatars(response.data)
-      } catch (error) {
-        console.error('Erro ao carregar avatares:', error)
+        const data = await getAvatar(); // retorna {glb_url, png_url} ou null normalizado
+        if (mounted && data) {
+          setCurrentAvatar({
+            glb_url: data.glb_url ?? null,
+            png_url: data.png_url ?? null,
+          });
+        }
+      } catch (err) {
+        // não quebrar UI
+        console.warn('[CONNECTUS PATCH] getAvatar falhou', err);
       }
-    }
-    loadAvatars()
-  }, [])
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // [CONNECTUS PATCH] Remover carregamento de avatares antigos
 
   const handleEdit = () => {
     setIsEditing(true)
@@ -49,7 +61,6 @@ const ProfilePage = () => {
     try {
       await updateProfile(editData)
       setIsEditing(false)
-      setShowAvatarSelector(false)
       toast.success('Perfil atualizado com sucesso!')
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error)
@@ -59,7 +70,6 @@ const ProfilePage = () => {
 
   const handleCancel = () => {
     setIsEditing(false)
-    setShowAvatarSelector(false)
     setEditData({
       full_name: user?.full_name || '',
       email: user?.email || '',
@@ -69,9 +79,43 @@ const ProfilePage = () => {
     })
   }
 
-  const handleAvatarSelect = (avatarId) => {
-    setEditData(prev => ({ ...prev, avatar: avatarId }))
+  // [CONNECTUS PATCH] Handler para salvar avatar do Ready Player Me
+  async function handleRPMSaved({ avatar_glb_url, avatar_png_url }) {
+    try {
+      await updateProfileAvatar({ avatar_glb_url, avatar_png_url });
+      
+      // Cache-buster para evitar cache da CDN do RPM
+      const pngUrlWithCacheBuster = avatar_png_url ? `${avatar_png_url}?v=${Date.now()}` : null;
+      
+      setCurrentAvatar({
+        glb_url: avatar_glb_url ?? null,
+        png_url: pngUrlWithCacheBuster,
+      });
+      
+      // [CONNECTUS PATCH] Propagar avatar na store do usuário
+      const { setUser } = useAuthStore.getState();
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) {
+        const updatedUser = {
+          ...currentUser,
+          avatar_png_url: pngUrlWithCacheBuster,
+          avatar_glb_url: avatar_glb_url ?? null
+        };
+        setUser(updatedUser);
+        if (import.meta.env.DEV) console.log('[AVATAR] atualizado', updatedUser?.avatar_png_url);
+      }
+      
+      toast.success('Avatar atualizado com sucesso!');
+      if (import.meta.env.DEV)
+        console.log('[RPM] avatar salvo', { avatar_glb_url, avatar_png_url });
+    } catch (err) {
+      console.error('[CONNECTUS PATCH] updateProfileAvatar falhou', err);
+      toast.error('Não foi possível salvar o avatar.');
+    } finally {
+      setShowRPM(false);
+    }
   }
+
 
   const getAvatarUrl = (avatarId) => {
     return `/static/avatars/${avatarId}.png`
@@ -88,6 +132,11 @@ const ProfilePage = () => {
       >
         <div>
           <h1 className="text-3xl font-bold text-white">Perfil</h1>
+          {import.meta.env.DEV && (
+            <span className="ml-2 text-[10px] px-2 py-1 rounded bg-emerald-900/40 text-emerald-200">
+              RPM flag: {String(import.meta.env.VITE_FEATURE_RPM)}
+            </span>
+          )}
           <p className="text-dark-400 mt-1">Gerencie suas informações pessoais</p>
         </div>
         {!isEditing && (
@@ -109,30 +158,23 @@ const ProfilePage = () => {
       >
         <Card className="p-8">
           <div className="flex items-start space-x-6">
-            {/* Avatar */}
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-dark-700 border-4 border-primary-500">
-                {user?.avatar ? (
-                  <img
-                    src={getAvatarUrl(user.avatar)}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.src = '/static/avatars/avatar_1.png'
-                    }}
-                  />
+            {/* [CONNECTUS PATCH] Avatar preview seguro */}
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-24 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden ring-2 ring-sky-500">
+                {currentAvatar?.png_url ? (
+                  <img src={currentAvatar.png_url} alt="Meu avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-primary-500">
-                    <User className="w-8 h-8 text-white" />
-                  </div>
+                  <span className="text-xs text-slate-300">sem avatar</span>
                 )}
               </div>
-              {isEditing && (
+
+              {featureRPM && (
                 <button
-                  onClick={() => setShowAvatarSelector(true)}
-                  className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center hover:bg-primary-700 transition-colors"
+                  type="button"
+                  onClick={() => { if (import.meta.env.DEV) console.log('[RPM] abrir modal'); setShowRPM(true); }}
+                  className="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm"
                 >
-                  <Camera className="w-4 h-4 text-white" />
+                  Criar/Editar meu avatar
                 </button>
               )}
             </div>
@@ -187,6 +229,27 @@ const ProfilePage = () => {
           >
             <Card className="p-6">
               <h3 className="text-xl font-bold text-white mb-6">Editar Informações</h3>
+              
+              {/* [CONNECTUS PATCH] Preview do avatar atual */}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-20 h-20 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden ring-2 ring-sky-500">
+                  {currentAvatar?.png_url ? (
+                    <img src={currentAvatar.png_url} alt="Meu avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xs text-slate-300">sem avatar</span>
+                  )}
+                </div>
+
+                {featureRPM && (
+                  <button
+                    type="button"
+                    onClick={() => { if (import.meta.env.DEV) console.log('[RPM] abrir modal'); setShowRPM(true); }}
+                    className="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm"
+                  >
+                    Criar/Editar meu avatar
+                  </button>
+                )}
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -243,14 +306,16 @@ const ProfilePage = () => {
                         }}
                       />
                     </div>
-                    <Button
-                      onClick={() => setShowAvatarSelector(true)}
-                      variant="outline"
-                      className="flex items-center space-x-2"
-                    >
-                      <Camera className="w-4 h-4" />
-                      <span>Trocar Avatar</span>
-                    </Button>
+                    {featureRPM && (
+                      <Button
+                        onClick={() => { if (import.meta.env.DEV) console.log('[RPM] abrir modal'); setShowRPM(true); }}
+                        variant="outline"
+                        className="flex items-center space-x-2"
+                      >
+                        <Camera className="w-4 h-4" />
+                        <span>Criar/Editar meu avatar</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -290,77 +355,66 @@ const ProfilePage = () => {
         )}
       </AnimatePresence>
 
-      {/* Seletor de Avatar */}
-      <AnimatePresence>
-        {showAvatarSelector && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-            onClick={() => setShowAvatarSelector(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-dark-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Escolher Avatar</h3>
-                <button
-                  onClick={() => setShowAvatarSelector(false)}
-                  className="text-dark-400 hover:text-white transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+      {/* [CONNECTUS PATCH] Seção Ready Player Me */}
+      {featureRPM && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Meu Avatar (Ready Player Me)</h3>
+                  <p className="text-dark-400 text-sm">Crie um avatar personalizado em 3D</p>
+                </div>
               </div>
+              <Button
+                onClick={() => setShowRPM(true)}
+                className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Criar/Editar meu avatar</span>
+              </Button>
+            </div>
+            
+            {currentAvatar.png_url ? (
+              <div className="flex items-center space-x-4 p-4 bg-dark-700/50 rounded-lg">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary-500">
+                  <img
+                    src={currentAvatar.png_url}
+                    alt="Avatar atual"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="text-white font-medium">Avatar personalizado ativo</p>
+                  <p className="text-dark-400 text-sm">Criado com Ready Player Me</p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-dark-400">
+                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhum avatar personalizado ainda</p>
+                <p className="text-sm">Clique no botão acima para criar o seu!</p>
+              </div>
+            )}
+          </Card>
+        </motion.div>
+      )}
 
-              <div className="grid grid-cols-4 gap-4">
-                {avatars.map((avatar) => (
-                  <button
-                    key={avatar.id}
-                    onClick={() => handleAvatarSelect(avatar.id)}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      editData.avatar === avatar.id
-                        ? 'border-primary-500 bg-primary-500/20'
-                        : 'border-dark-600 hover:border-primary-400'
-                    }`}
-                  >
-                    <div className="w-16 h-16 mx-auto rounded-full overflow-hidden bg-dark-700 mb-2">
-                      <img
-                        src={avatar.url}
-                        alt={avatar.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.src = '/static/avatars/avatar_1.png'
-                        }}
-                      />
-                    </div>
-                    <p className="text-sm text-dark-300 text-center">{avatar.name}</p>
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex justify-end space-x-4 mt-6">
-                <Button
-                  onClick={() => setShowAvatarSelector(false)}
-                  variant="outline"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={() => setShowAvatarSelector(false)}
-                  className="bg-primary-600 hover:bg-primary-700"
-                >
-                  Confirmar
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* [CONNECTUS PATCH] Modal Ready Player Me */}
+      {featureRPM && (
+        <ReadyPlayerMeModal
+          open={showRPM}
+          onClose={() => setShowRPM(false)}
+          onSaved={handleRPMSaved}
+        />
+      )}
     </div>
   )
 }
