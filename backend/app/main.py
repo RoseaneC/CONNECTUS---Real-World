@@ -22,6 +22,22 @@ app = FastAPI(
     debug=settings.DEBUG
 )
 
+# [CONNECTUS HOTFIX] Configurar CORS antes de importar rotas
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+print(f"🌐 CORS configurado para origins: {origins}")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # [CONNECTUS PATCH] Diagnóstico seguro da OpenAI no startup
 from app.core.config import settings, _mask_key, _key_source
 
@@ -78,22 +94,7 @@ try:
 except Exception:
     pass
 
-# Configurar CORS
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
-print(f"🌐 CORS configurado para origins: {origins}")
 print(f"🚀 Servidor iniciando em: http://127.0.0.1:8000")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Incluir rotas
 app.include_router(auth.router)
