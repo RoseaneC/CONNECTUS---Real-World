@@ -1,35 +1,50 @@
-# [CONNECTUS PATCH] scripts/seed_dev_user.py
-from app.core.config import settings  # mantém leitura do .env
-from app.core.database import SessionLocal, Base, engine
-from app.models.user import User
-from app.models.mission import UserMission  # Import necessário para resolver relacionamentos
-from app.models.post import Post, PostLike, PostComment  # Import necessário para resolver relacionamentos
-from app.models.chat import ChatMessage  # Import necessário para resolver relacionamentos
-from app.models.ranking import UserRanking  # Import necessário para resolver relacionamentos
+# [CONNECTUS HOTFIX] seed dev user idempotente
+import os, sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from app.core.database import SessionLocal, engine, Base
 from app.core.auth import get_password_hash
+from sqlalchemy import func, or_, text
 
-def ensure_tables():
+def main():
+    # Criar tabelas sem importar todos os modelos
     Base.metadata.create_all(bind=engine)
-
-def seed_dev_user():
-    ensure_tables()
     db = SessionLocal()
     try:
-        user = db.query(User).filter_by(nickname="roseane").first()
-        if user:
-            print("ℹ️ Usuário 'roseane' já existe. Nada a fazer.")
+        nickname = os.getenv("SEED_NICKNAME", "roseane")
+        email = os.getenv("SEED_EMAIL", "roseane@example.com")
+        password = os.getenv("SEED_PASSWORD", "123456")
+
+        # [CONNECTUS HOTFIX] case-insensitive: verifica se já existe por nickname ou email
+        # Usar SQL direto para evitar problemas de importação de modelos
+        result = db.execute(text("""
+            SELECT id, nickname FROM users 
+            WHERE LOWER(nickname) = LOWER(:nickname) 
+            OR LOWER(email) = LOWER(:email)
+        """), {"nickname": nickname, "email": email}).fetchone()
+
+        if result:
+            print(f"ℹ️ Seed: usuário '{result.nickname}' já existe.")
             return
-        u = User(
-            nickname="roseane",
-            email="roseane@example.com",
-            password_hash=get_password_hash("123456"),
-            is_active=True,
-        )
-        db.add(u)
+
+        # Criar usuário usando SQL direto
+        password_hash = get_password_hash(password)
+        db.execute(text("""
+            INSERT INTO users (nickname, email, password_hash, is_active, created_at)
+            VALUES (:nickname, :email, :password_hash, :is_active, datetime('now'))
+        """), {
+            "nickname": nickname,
+            "email": email,
+            "password_hash": password_hash,
+            "is_active": True
+        })
         db.commit()
-        print("✅ Usuário 'roseane' criado com sucesso!")
+        print(f"✅ Seed: usuário '{nickname}' criado com senha '{password}'")
     finally:
         db.close()
 
 if __name__ == "__main__":
-    seed_dev_user()
+    main()

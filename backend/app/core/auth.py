@@ -66,13 +66,29 @@ def get_user_by_nickname(db: Session, nickname: str) -> Optional[User]:
     """Buscar usuário por nickname"""
     return db.query(User).filter(User.nickname == nickname).first()
 
-def authenticate_user(db: Session, nickname: str, password: str) -> Optional[User]:
-    """Autenticar usuário com debug detalhado"""
-    print(f"🔍 DEBUG AUTH: Tentando autenticar nickname: {nickname}")
+def get_user_by_identifier(db: Session, identifier: str) -> Optional[User]:
+    """[CONNECTUS HOTFIX] Buscar usuário por nickname ou email (case-insensitive)"""
+    from sqlalchemy import func, or_
     
-    user = get_user_by_nickname(db, nickname)
+    # Normalizar para comparação case-insensitive
+    id_lower = identifier.lower()
+    
+    # Buscar por nickname OU email (case-insensitive)
+    return db.query(User).filter(
+        or_(
+            func.lower(User.nickname) == id_lower,
+            func.lower(User.email) == id_lower
+        )
+    ).first()
+
+def authenticate_user(db: Session, nickname: str, password: str) -> Optional[User]:
+    """[CONNECTUS HOTFIX] Autenticar usuário com debug detalhado (case-insensitive)"""
+    print(f"🔍 DEBUG AUTH: Tentando autenticar identifier: {nickname}")
+    
+    # Usar busca case-insensitive por nickname ou email
+    user = get_user_by_identifier(db, nickname)
     if not user:
-        print(f"❌ DEBUG AUTH: Usuário {nickname} não encontrado")
+        print(f"❌ DEBUG AUTH: Usuário '{nickname}' não encontrado (case-insensitive)")
         return None
     
     print(f"✅ DEBUG AUTH: Usuário encontrado - ID: {user.id}, Ativo: {user.is_active}")

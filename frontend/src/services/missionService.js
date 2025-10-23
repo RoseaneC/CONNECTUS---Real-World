@@ -82,6 +82,47 @@ export const missionService = {
       console.error('Erro ao buscar estatísticas de missões:', error);
       throw error;
     }
+  },
+
+  // [CONNECTUS PATCH] missões v2 - funções verificáveis
+  listMyMissions: async () => {
+    try {
+      const response = await api.get('/missions/user/me');
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar missões disponíveis:', error);
+      throw error;
+    }
+  },
+
+  verifyMissionQr: async (token) => {
+    try {
+      const response = await api.post('/missions/verify-qr', { token });
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao verificar QR:', error);
+      throw error;
+    }
+  },
+
+  completeMission: async (id) => {
+    try {
+      const response = await api.post(`/missions/${id}/complete`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao completar missão:', error);
+      throw error;
+    }
+  },
+
+  issueQrDev: async (missionId) => {
+    try {
+      const response = await api.post(`/missions/${missionId}/issue-qr-dev`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao emitir QR dev:', error);
+      throw error;
+    }
   }
 };
 

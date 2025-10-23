@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }) => {
       let errorMessage = 'Erro ao fazer login'
       
       if (error.response?.status === 401) {
-        errorMessage = 'Credenciais inválidas. Verifique seu nickname e senha.'
+        errorMessage = 'Usuário ou senha inválidos. Se for seu 1º acesso, crie sua conta.'
       } else if (error.response?.status === 400) {
         errorMessage = error.response.data.detail || 'Dados inválidos'
       } else if (error.response?.status === 422) {

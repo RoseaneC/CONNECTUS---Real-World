@@ -13,9 +13,14 @@ import {
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
+// [CONNECTUS PATCH] import para missões v2
+import { DailyMissionCard } from '../components/missions/DailyMissionCard'
 
 const DashboardPage = () => {
   const { user } = useAuth()
+  
+  // [CONNECTUS PATCH] verificar feature flag para missões v2
+  const featureMissions = String(import.meta.env.VITE_FEATURE_MISSIONS_V2).toLowerCase() === 'true'
 
   const stats = [
     {
@@ -173,43 +178,47 @@ const DashboardPage = () => {
         transition={{ duration: 0.6, delay: 0.3 }}
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
       >
-        {/* Missão do dia */}
-        <Card variant="glow" className="relative overflow-hidden">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                Missão do Dia
-              </h3>
-              <p className="text-dark-400">
-                Complete missões diárias para ganhar XP e tokens
-              </p>
-            </div>
-            <div className="p-3 bg-primary-500/20 rounded-lg">
-              <Zap className="w-6 h-6 text-primary-400" />
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            <div className="bg-dark-700/50 rounded-lg p-4">
-              <h4 className="font-semibold text-white mb-2">Ir à escola</h4>
-              <p className="text-sm text-dark-400 mb-3">
-                Vá à escola hoje e registre sua presença
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-accent-400 font-medium">
-                  +50 XP • +2 Tokens
-                </span>
-                <Button size="sm" variant="primary">
-                  Completar
-                </Button>
+        {/* [CONNECTUS PATCH] Missão do dia - com feature flag */}
+        {featureMissions ? (
+          <DailyMissionCard />
+        ) : (
+          <Card variant="glow" className="relative overflow-hidden">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Missão do Dia
+                </h3>
+                <p className="text-dark-400">
+                  Complete missões diárias para ganhar XP e tokens
+                </p>
+              </div>
+              <div className="p-3 bg-primary-500/20 rounded-lg">
+                <Zap className="w-6 h-6 text-primary-400" />
               </div>
             </div>
-          </div>
-          
-          <Button variant="ghost" className="w-full mt-4">
-            Ver Todas as Missões
-          </Button>
-        </Card>
+            
+            <div className="space-y-3">
+              <div className="bg-dark-700/50 rounded-lg p-4">
+                <h4 className="font-semibold text-white mb-2">Ir à escola</h4>
+                <p className="text-sm text-dark-400 mb-3">
+                  Vá à escola hoje e registre sua presença
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-accent-400 font-medium">
+                    +50 XP • +2 Tokens
+                  </span>
+                  <Button size="sm" variant="primary">
+                    Completar
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <Button variant="ghost" className="w-full mt-4">
+              Ver Todas as Missões
+            </Button>
+          </Card>
+        )}
 
         {/* Ranking rápido */}
         <Card variant="glow" className="relative overflow-hidden">
