@@ -4,7 +4,7 @@ export const missionService = {
   // Buscar missões
   getAllMissions: async (activeOnly = true) => {
     try {
-      const response = await api.get('/missions');
+      const response = await api.get('/missions/');
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar missões:', error);
@@ -14,7 +14,7 @@ export const missionService = {
 
   getMyMissions: async () => {
     try {
-      const response = await api.get('/missions/my-missions');
+      const response = await api.get('/missions/my-missions/');
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar minhas missões:', error);
@@ -24,7 +24,7 @@ export const missionService = {
 
   getDailyMissions: async () => {
     try {
-      const response = await api.get('/missions/daily');
+      const response = await api.get('/missions/daily/');
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar missões diárias:', error);
@@ -34,7 +34,7 @@ export const missionService = {
 
   getMissionById: async (missionId) => {
     try {
-      const response = await api.get(`/missions/${missionId}`);
+      const response = await api.get(`/missions/${missionId}/`);
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar missão:', error);
@@ -45,7 +45,7 @@ export const missionService = {
   // Gerenciar missões do usuário
   assignMission: async (missionId) => {
     try {
-      const response = await api.post(`/missions/assign/${missionId}`);
+      const response = await api.post(`/missions/assign/${missionId}/`);
       return response.data;
     } catch (error) {
       console.error('Erro ao atribuir missão:', error);
@@ -55,7 +55,7 @@ export const missionService = {
 
   updateProgress: async (userMissionId, progressData) => {
     try {
-      const response = await api.put(`/missions/${userMissionId}/progress`, progressData);
+      const response = await api.put(`/missions/${userMissionId}/progress/`, progressData);
       return response.data;
     } catch (error) {
       console.error('Erro ao atualizar progresso:', error);
@@ -65,7 +65,7 @@ export const missionService = {
 
   completeMission: async (userMissionId) => {
     try {
-      const response = await api.post(`/missions/${userMissionId}/complete`);
+      const response = await api.post(`/missions/${userMissionId}/complete/`);
       return response.data;
     } catch (error) {
       console.error('Erro ao completar missão:', error);
@@ -76,7 +76,7 @@ export const missionService = {
   // Estatísticas
   getMissionStats: async () => {
     try {
-      const response = await api.get('/missions/stats');
+      const response = await api.get('/missions/stats/');
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar estatísticas de missões:', error);
@@ -87,7 +87,7 @@ export const missionService = {
   // [CONNECTUS PATCH] missões v2 - funções verificáveis
   listMyMissions: async () => {
     try {
-      const response = await api.get('/missions/user/me');
+      const response = await api.get('/missions/user/me/');
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar missões disponíveis:', error);
@@ -97,7 +97,7 @@ export const missionService = {
 
   verifyMissionQr: async (token) => {
     try {
-      const response = await api.post('/missions/verify-qr', { token });
+      const response = await api.post('/missions/verify-qr/', { token });
       return response.data;
     } catch (error) {
       console.error('Erro ao verificar QR:', error);
@@ -107,7 +107,7 @@ export const missionService = {
 
   completeMission: async (id) => {
     try {
-      const response = await api.post(`/missions/${id}/complete`);
+      const response = await api.post(`/missions/${id}/complete/`);
       return response.data;
     } catch (error) {
       console.error('Erro ao completar missão:', error);
@@ -117,7 +117,7 @@ export const missionService = {
 
   issueQrDev: async (missionId) => {
     try {
-      const response = await api.post(`/missions/${missionId}/issue-qr-dev`);
+      const response = await api.post(`/missions/${missionId}/issue-qr-dev/`);
       return response.data;
     } catch (error) {
       console.error('Erro ao emitir QR dev:', error);

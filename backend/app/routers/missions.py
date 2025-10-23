@@ -48,12 +48,20 @@ async def get_all_missions_no_slash(
         )
 
 
-@router.get("/my-missions", response_model=List[UserMissionResponse])
-async def get_my_missions(
+@router.get("/my-missions/", response_model=List[UserMissionResponse])
+async def get_my_missions_slash(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Obtém missões do usuário atual"""
+    """Obtém missões do usuário atual (com barra)"""
+    return await get_my_missions_no_slash(current_user, db)
+
+@router.get("/my-missions", response_model=List[UserMissionResponse], include_in_schema=False)
+async def get_my_missions_no_slash(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Obtém missões do usuário atual (sem barra)"""
     try:
         # Implementação direta - retornar lista vazia por enquanto
         return []
@@ -66,12 +74,20 @@ async def get_my_missions(
         )
 
 
-@router.get("/daily", response_model=List[UserMissionResponse])
-async def get_daily_missions(
+@router.get("/daily/", response_model=List[UserMissionResponse])
+async def get_daily_missions_slash(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Obtém missões diárias do usuário"""
+    """Obtém missões diárias do usuário (com barra)"""
+    return await get_daily_missions_no_slash(current_user, db)
+
+@router.get("/daily", response_model=List[UserMissionResponse], include_in_schema=False)
+async def get_daily_missions_no_slash(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Obtém missões diárias do usuário (sem barra)"""
     try:
         # Implementação direta - retornar lista vazia por enquanto
         return []
@@ -177,12 +193,20 @@ async def complete_mission(
         )
 
 
-@router.get("/stats")
-async def get_mission_stats(
+@router.get("/stats/")
+async def get_mission_stats_slash(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Obtém estatísticas de missões do usuário"""
+    """Obtém estatísticas de missões do usuário (com barra)"""
+    return await get_mission_stats_no_slash(current_user, db)
+
+@router.get("/stats", include_in_schema=False)
+async def get_mission_stats_no_slash(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Obtém estatísticas de missões do usuário (sem barra)"""
     try:
         # MissionService removido - implementação direta
         # Implementação simplificada
@@ -254,8 +278,14 @@ async def reset_daily_missions(
 
 
 # [CONNECTUS PATCH] rotas QR e completar missão
-@router.post("/verify-qr")
-def verify_qr(payload: dict, db=Depends(get_db), user=Depends(get_current_active_user)):
+@router.post("/verify-qr/")
+def verify_qr_slash(payload: dict, db=Depends(get_db), user=Depends(get_current_active_user)):
+    """Verifica QR code (com barra)"""
+    return verify_qr_no_slash(payload, db, user)
+
+@router.post("/verify-qr", include_in_schema=False)
+def verify_qr_no_slash(payload: dict, db=Depends(get_db), user=Depends(get_current_active_user)):
+    """Verifica QR code (sem barra)"""
     token = payload.get("token")
     if not token:
         raise HTTPException(400, "token requerido")
@@ -274,8 +304,14 @@ def verify_qr(payload: dict, db=Depends(get_db), user=Depends(get_current_active
     mc = award(db, user["id"], mission, "qr", {"jwt": "masked"})
     return {"ok": True, "xp": mc.xp_awarded, "tokens": mc.tokens_awarded}
 
-@router.post("/{mission_id}/complete")
-def complete_in_app(mission_id: int, db=Depends(get_db), user=Depends(get_current_active_user)):
+@router.post("/{mission_id}/complete/")
+def complete_in_app_slash(mission_id: int, db=Depends(get_db), user=Depends(get_current_active_user)):
+    """Completa missão in-app (com barra)"""
+    return complete_in_app_no_slash(mission_id, db, user)
+
+@router.post("/{mission_id}/complete", include_in_schema=False)
+def complete_in_app_no_slash(mission_id: int, db=Depends(get_db), user=Depends(get_current_active_user)):
+    """Completa missão in-app (sem barra)"""
     mission = db.query(Mission).get(mission_id)
     if not mission or mission.type != MissionType.IN_APP_ACTION:
         raise HTTPException(404, "Missão inválida")
@@ -289,8 +325,14 @@ def complete_in_app(mission_id: int, db=Depends(get_db), user=Depends(get_curren
     return {"ok": True, "xp": mc.xp_awarded, "tokens": mc.tokens_awarded}
 
 # [CONNECTUS PATCH] emitir QR token DEV
-@router.post("/{mission_id}/issue-qr-dev")
-def issue_qr_dev(mission_id: int, db=Depends(get_db), user=Depends(get_current_active_user)):
+@router.post("/{mission_id}/issue-qr-dev/")
+def issue_qr_dev_slash(mission_id: int, db=Depends(get_db), user=Depends(get_current_active_user)):
+    """Emite QR token dev (com barra)"""
+    return issue_qr_dev_no_slash(mission_id, db, user)
+
+@router.post("/{mission_id}/issue-qr-dev", include_in_schema=False)
+def issue_qr_dev_no_slash(mission_id: int, db=Depends(get_db), user=Depends(get_current_active_user)):
+    """Emite QR token dev (sem barra)"""
     mission = db.query(Mission).get(mission_id)
     if not mission:
         raise HTTPException(404, "Missão não encontrada")
@@ -299,12 +341,20 @@ def issue_qr_dev(mission_id: int, db=Depends(get_db), user=Depends(get_current_a
     return {"token": token}
 
 # [CONNECTUS PATCH] listar missões do usuário disponíveis hoje
-@router.get("/user/me")
-def get_user_missions_available(
+@router.get("/user/me/")
+def get_user_missions_available_slash(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Obtém missões disponíveis para o usuário hoje"""
+    """Obtém missões disponíveis para o usuário hoje (com barra)"""
+    return get_user_missions_available_no_slash(current_user, db)
+
+@router.get("/user/me", include_in_schema=False)
+def get_user_missions_available_no_slash(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Obtém missões disponíveis para o usuário hoje (sem barra)"""
     try:
         # Buscar missões ativas e diárias
         missions = db.query(Mission).filter(

@@ -1,7 +1,7 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
-# from decimal import Decimal
+from decimal import Decimal
 
 
 class MissionBase(BaseModel):
@@ -9,7 +9,7 @@ class MissionBase(BaseModel):
     description: str
     category: str
     xp_reward: int
-    token_reward: str
+    token_reward: Union[int, float, str, Decimal]
     is_daily: bool
     difficulty: str
 
@@ -21,7 +21,7 @@ class MissionCreate(MissionBase):
 class MissionResponse(MissionBase):
     id: int
     is_active: bool
-    created_at: str
+    created_at: Union[str, datetime]
     
     class Config:
         from_attributes = True
