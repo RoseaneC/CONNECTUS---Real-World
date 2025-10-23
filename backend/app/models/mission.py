@@ -1,7 +1,15 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Numeric, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Numeric, ForeignKey, Time, JSON, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from sqlalchemy import Enum as SAEnum
+from enum import Enum
 from app.core.database import Base
+
+# [CONNECTUS PATCH] tipos de missão e completion
+class MissionType(str, Enum):
+    CHECKIN_QR = "CHECKIN_QR"
+    IN_APP_ACTION = "IN_APP_ACTION"
+    CHECKIN_GEO = "CHECKIN_GEO"  # opcional; fica atrás de flag
 
 
 class Mission(Base):
@@ -16,6 +24,12 @@ class Mission(Base):
     is_daily = Column(Boolean, default=True, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     difficulty = Column(String(20), default="easy", nullable=False)  # easy, medium, hard
+    
+    # [CONNECTUS PATCH] novos campos para missões verificáveis
+    type = Column(SAEnum(MissionType), nullable=False, default=MissionType.IN_APP_ACTION)
+    window_start = Column(Time, nullable=True)  # p/ janela diária opcional
+    window_end = Column(Time, nullable=True)
+    verification_hint = Column(String, nullable=True)
     
     # Metadados
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -56,6 +70,21 @@ class UserMission(Base):
         self.is_completed = True
         self.completed_at = func.now()
         self.progress = 100
+
+
+# [CONNECTUS PATCH] nova tabela para missões verificáveis
+class MissionCompletion(Base):
+    __tablename__ = "mission_completions"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=False)
+    completed_at = Column(DateTime, default=func.now, nullable=False)
+    proof_type = Column(String, nullable=True)    # "qr" | "in_app" | "geo"
+    proof_meta = Column(JSON, nullable=True)      # dados mínimos
+    xp_awarded = Column(Integer, default=0)
+    tokens_awarded = Column(Integer, default=0)
+
+    __table_args__ = (UniqueConstraint("user_id", "mission_id", "completed_at", name="uq_daily_unique_by_day"),)
 
 
 
