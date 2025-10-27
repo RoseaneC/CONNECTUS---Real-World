@@ -19,7 +19,7 @@ import { toast } from 'react-hot-toast'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
-import { api } from '../services/api'
+import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
 const TimelinePage = () => {

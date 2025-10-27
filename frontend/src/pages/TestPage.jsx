@@ -13,7 +13,7 @@ import {
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
-import { api } from '../services/api'
+import api from '../services/api'
 
 const TestPage = () => {
   const { user, isAuthenticated, loading } = useAuth()

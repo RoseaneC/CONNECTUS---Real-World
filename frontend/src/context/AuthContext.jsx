@@ -6,7 +6,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import { api } from '../services/api'
+import api from '../services/api'
 
 const AuthContext = createContext({})
 
@@ -214,9 +214,7 @@ export const AuthProvider = ({ children }) => {
     }))
   }
 
-  const isAuthenticated = () => {
-    return !!token && !!user
-  }
+  const isAuthenticated = !!token && !!user
 
   const value = {
     user,

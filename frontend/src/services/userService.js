@@ -1,4 +1,4 @@
-import { api } from './api';
+import api from './api';
 
 export const userService = {
   // Perfil do usuário
@@ -78,6 +78,8 @@ export const userService = {
     }
   }
 };
+
+
 
 
 

@@ -1,15 +1,22 @@
 // frontend/src/services/api.js
 import axios from "axios";
 
-const BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+// Coerção forte / defaults seguros
+const rawBase = import.meta.env?.VITE_API_URL || "http://127.0.0.1:8000";
+const rawCreds = (import.meta.env?.VITE_WITH_CREDENTIALS ?? "true").toString().trim().toLowerCase();
 
-export const api = axios.create({
-  baseURL: BASE,
-  timeout: 30000,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+// aceita "true", "1", true; qualquer outra coisa vira false
+const withCreds =
+  rawCreds === "true" || rawCreds === "1" || rawCreds === "yes" || rawCreds === "y";
+
+console.info("[CONNECTUS] BaseURL:", rawBase, "| withCredentials (env→bool):", withCreds);
+
+// força globalmente — e também por instância
+axios.defaults.withCredentials = true;
+
+const api = axios.create({
+  baseURL: rawBase,
+  withCredentials: true, // sempre true
 });
 
 // Request interceptor to attach JWT
@@ -22,6 +29,17 @@ api.interceptors.request.use((config) => {
   }
   return config;
 }, (error) => Promise.reject(error));
+
+// Interceptor para logar falhas de rede (antes do refresh token)
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err?.message === "Network Error" || err?.code === "ERR_NETWORK") {
+      console.error("[CONNECTUS] Falha de rede/servidor:", err?.config?.url);
+    }
+    return Promise.reject(err);
+  }
+);
 
 // Response interceptor com refresh token automático
 api.interceptors.response.use(
@@ -95,6 +113,7 @@ api.interceptors.response.use(
   }
 );
 
+// Export default apenas
 export default api;
 
 // API de Autenticação

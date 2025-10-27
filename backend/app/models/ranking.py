@@ -27,7 +27,7 @@ class UserRanking(Base):
     last_updated = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relacionamentos
-    user = relationship("User", back_populates="ranking")
+    user = relationship("User")  # Removido back_populates
     
     def __repr__(self):
         return f"<UserRanking(user_id={self.user_id}, xp_rank={self.xp_rank}, overall_rank={self.overall_rank})>"

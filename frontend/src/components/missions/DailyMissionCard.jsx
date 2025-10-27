@@ -4,6 +4,9 @@ import { missionService } from '../../services/missionService';
 import Card from '../ui/Card';
 // Button removido - usando <button> nativo
 import { VerifyQrModal } from './VerifyQrModal';
+// [CONNECTUS HACKATHON] Web3 integration
+import MissionReward from './MissionReward';
+import { useWallet } from '../../web3/useWallet';
 
 export const DailyMissionCard = () => {
   const [missions, setMissions] = useState([]);
@@ -11,6 +14,9 @@ export const DailyMissionCard = () => {
   const [selectedMission, setSelectedMission] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
   const [message, setMessage] = useState('');
+  
+  // [CONNECTUS HACKATHON] Web3 wallet state
+  const { address, isConnected } = useWallet();
 
   useEffect(() => {
     loadMissions();
@@ -33,8 +39,11 @@ export const DailyMissionCard = () => {
       const result = await missionService.completeMission(mission.id);
       setMessage(`✅ Missão completada! +${result.xp} XP, +${result.tokens} tokens`);
       loadMissions(); // Recarregar lista
+      return { success: true, xp: result.xp, tokens: result.tokens };
     } catch (error) {
-      setMessage(`❌ Erro: ${error.response?.data?.detail || 'Falha ao completar missão'}`);
+      const errorMsg = error.response?.data?.detail || 'Falha ao completar missão';
+      setMessage(`❌ Erro: ${errorMsg}`);
+      return { success: false, error: errorMsg };
     }
   };
 
@@ -122,25 +131,25 @@ export const DailyMissionCard = () => {
                   <p className="text-sm text-gray-600 mb-2">{mission.description}</p>
                   <div className="flex items-center gap-4 text-sm text-gray-500">
                     <span>+{mission.xp_reward} XP</span>
-                    <span>+{mission.token_reward} tokens</span>
+                    <span>+{mission.token_reward} VEXA tokens</span>
                   </div>
                 </div>
                 
                 <div className="ml-4">
                   {mission.type === 'CHECKIN_QR' ? (
-                    <Button
+                    <button
                       onClick={() => handleQrMission(mission)}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                     >
                       Verificar QR
-                    </Button>
+                    </button>
                   ) : (
-                    <Button
-                      onClick={() => handleCompleteMission(mission)}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      Validar
-                    </Button>
+                    <MissionReward
+                      mission={mission}
+                      onComplete={() => handleCompleteMission(mission)}
+                      userAddress={address}
+                      isWalletConnected={isConnected}
+                    />
                   )}
                 </div>
               </div>

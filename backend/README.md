@@ -2,6 +2,66 @@
 
 Backend da plataforma Connectus - plataforma social gamificada para incentivar estudos e impacto social.
 
+## Ambiente & Execução (Windows/PowerShell)
+
+### 1) Python/venv (recomendado)
+```powershell
+cd backend
+py -3.13 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+# (se for usar Web3: certifique-se que eth-account está instalado)
+python -m pip install eth-account==0.13.7
+```
+
+### 2) Migrations (sem redirecionador '<')
+```powershell
+# Tarefa 2 (wallet on-chain)
+python backend/scripts/apply_sql_migration.py backend/app/db/migrations/003_wallet_onchain.sql
+# Tarefa 1 (missões em tempo real) — se necessário
+python backend/scripts/apply_sql_migration.py backend/app/db/migrations/002_missions_realtime.sql
+```
+
+### 3) Seeds
+```powershell
+python backend/scripts/seed_wallet_onchain.py
+# (opcional) ver flags
+python backend/scripts/show_flags.py
+```
+
+### 4) Subir o servidor
+```powershell
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+### 5) Testes rápidos (PowerShell)
+```powershell
+# Após logar e obter $TOKEN
+
+# Status da wallet
+$headers = @{ Authorization = "Bearer <TOKEN>" }
+irm "http://127.0.0.1:8000/wallet/status" -Headers $headers -Method GET
+
+# Ativar UI de carteira (opcional)
+python - << 'PY'
+import sqlite3
+con = sqlite3.connect('app/connectus.db')
+con.execute("UPDATE feature_flags SET enabled=1 WHERE key='ONCHAIN_TESTNET'")
+con.commit(); con.close()
+print("ONCHAIN_TESTNET=1")
+PY
+
+# Request message p/ assinatura
+irm "http://127.0.0.1:8000/wallet/address/request-message" -Headers $headers -Method POST
+
+# (Front assina no MetaMask; então:)
+$body = @{ address="0x..."; signature="0x..."; nonce="<copiado do request-message>" } | ConvertTo-Json
+$headersJson = @{ Authorization = "Bearer <TOKEN>"; "Content-Type"="application/json" }
+irm "http://127.0.0.1:8000/wallet/address/verify" -Headers $headersJson -Body $body -Method POST
+```
+
 ## Configuração Local
 
 ### 1. Ambiente Virtual

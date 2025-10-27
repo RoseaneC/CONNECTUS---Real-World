@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, Save, RotateCcw } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { api } from '../services/api'
+import api from '../services/api'
 
 const AvatarCustomizer = ({ isOpen, onClose, onSave, currentAvatar }) => {
   const [selectedOptions, setSelectedOptions] = useState({

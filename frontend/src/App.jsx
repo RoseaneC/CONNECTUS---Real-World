@@ -19,6 +19,8 @@ import TestSimplePage from './pages/TestSimplePage'
 import DebugPage from './pages/DebugPage'
 import DebugAuthPage from './pages/DebugAuthPage'
 import AIPage from './pages/AIPage'
+import VexaPage from './pages/Vexa'
+import WalletDemo from './pages/WalletDemo'
 
 // Componentes
 import MainLayout from './layouts/MainLayout'
@@ -100,6 +102,20 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <AIPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/vexa" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <VexaPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/wallet" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <WalletDemo />
                 </MainLayout>
               </ProtectedRoute>
             } />

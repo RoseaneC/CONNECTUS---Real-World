@@ -23,7 +23,7 @@ class Post(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relacionamentos
-    author = relationship("User", back_populates="posts")
+    author = relationship("User")  # Removido back_populates para evitar conflitos
     likes = relationship("PostLike", back_populates="post", cascade="all, delete-orphan")
     comments = relationship("PostComment", back_populates="post", cascade="all, delete-orphan")
     
@@ -42,7 +42,7 @@ class PostLike(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relacionamentos
-    user = relationship("User", back_populates="post_likes")
+    user = relationship("User")  # Removido back_populates
     post = relationship("Post", back_populates="likes")
     
     def __repr__(self):
@@ -63,7 +63,7 @@ class PostComment(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relacionamentos
-    user = relationship("User", back_populates="post_comments")
+    user = relationship("User")  # Removido back_populates
     post = relationship("Post", back_populates="comments")
     
     def __repr__(self):

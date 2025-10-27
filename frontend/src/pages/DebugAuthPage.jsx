@@ -156,7 +156,7 @@ const DebugAuthPage = () => {
                   <span className="text-primary-400">Usuário:</span> {user ? user.nickname : 'Não logado'}
                 </p>
                 <p className="text-dark-300">
-                  <span className="text-primary-400">Autenticado:</span> {isAuthenticated() ? 'Sim' : 'Não'}
+                  <span className="text-primary-400">Autenticado:</span> {isAuthenticated ? 'Sim' : 'Não'}
                 </p>
               </div>
             </div>

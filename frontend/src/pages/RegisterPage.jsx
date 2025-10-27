@@ -54,7 +54,7 @@ const RegisterPage = () => {
 
   // Redirecionar se já estiver logado
   useEffect(() => {
-    if (isAuthenticated()) {
+    if (isAuthenticated) {
       navigate('/dashboard')
     }
   }, [isAuthenticated, navigate])

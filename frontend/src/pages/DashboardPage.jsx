@@ -15,12 +15,24 @@ import Button from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
 // [CONNECTUS PATCH] import para missões v2
 import { DailyMissionCard } from '../components/missions/DailyMissionCard'
+// [CONNECTUS HACKATHON] import para Web3
+import WalletConnect from '../web3/components/WalletConnect'
+import TokenPanel from '../web3/components/TokenPanel'
+import MintForm from '../web3/components/MintForm'
+import NetworkHealth from '../web3/components/NetworkHealth'
+import { useWallet } from '../web3/useWallet'
 
 const DashboardPage = () => {
   const { user } = useAuth()
   
   // [CONNECTUS PATCH] verificar feature flag para missões v2
   const featureMissions = String(import.meta.env.VITE_FEATURE_MISSIONS_V2).toLowerCase() === 'true'
+  
+  // [CONNECTUS HACKATHON] Web3 wallet state
+  const { account, isSepolia } = useWallet()
+  
+  // [CONNECTUS HACKATHON] Feature flag para mint
+  const enableMint = import.meta.env.VITE_ENABLE_MINT === 'true'
 
   const stats = [
     {
@@ -169,6 +181,47 @@ const DashboardPage = () => {
             </div>
           </Card>
         ))}
+      </motion.div>
+
+      {/* [CONNECTUS HACKATHON] Seção Web3 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.25 }}
+        className="space-y-6"
+      >
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-2">
+            🌐 VEXA Web3
+          </h2>
+          <p className="text-dark-400">
+            Conecte sua carteira e interaja com tokens VEXA na blockchain
+          </p>
+        </div>
+        
+        {/* Network Health - Topo do painel */}
+        <div>
+          <NetworkHealth />
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Wallet Connect */}
+          <div>
+            <WalletConnect />
+          </div>
+          
+          {/* Token Panel */}
+          <div>
+            <TokenPanel />
+          </div>
+        </div>
+        
+        {/* Mint Form */}
+        {enableMint && (
+          <div>
+            <MintForm />
+          </div>
+        )}
       </motion.div>
 
       {/* Missões em destaque */}

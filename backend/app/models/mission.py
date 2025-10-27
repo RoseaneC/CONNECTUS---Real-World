@@ -59,7 +59,7 @@ class UserMission(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relacionamentos
-    user = relationship("User", back_populates="missions")
+    user = relationship("User")  # Removido back_populates
     mission = relationship("Mission", back_populates="user_missions")
     
     def __repr__(self):

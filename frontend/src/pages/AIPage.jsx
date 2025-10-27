@@ -29,7 +29,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import MarkdownMessage from '../components/MarkdownMessage'
 import { useAuth } from '../context/AuthContext'
-import { api } from '../services/api'
+import api from '../services/api'
 
 const AIPage = () => {
   const { user } = useAuth()

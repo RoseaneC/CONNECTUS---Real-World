@@ -43,7 +43,7 @@ class ChatMessage(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relacionamentos
-    user = relationship("User", back_populates="chat_messages")
+    user = relationship("User")  # Removido back_populates
     room = relationship("ChatRoom", back_populates="messages")
     
     def __repr__(self):

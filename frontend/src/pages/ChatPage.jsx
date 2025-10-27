@@ -14,7 +14,7 @@ import { toast } from 'react-hot-toast'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
-import { api } from '../services/api'
+import api from '../services/api'
 
 const ChatPage = () => {
   const [rooms, setRooms] = useState([])
@@ -349,6 +349,8 @@ const ChatPage = () => {
 }
 
 export default ChatPage
+
+
 
 
 

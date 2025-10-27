@@ -20,6 +20,10 @@ class User(Base):
     bio = Column(Text, nullable=True)
     avatar_url = Column(String(255), nullable=True)
     
+    # Campos do Ready Player Me
+    avatar_glb_url = Column(String(500), nullable=True)
+    avatar_png_url = Column(String(500), nullable=True)
+    
     # Campos de gamificação
     xp = Column(Integer, default=0)
     level = Column(Integer, default=1)
@@ -42,13 +46,13 @@ class User(Base):
     likes_received = Column(Integer, default=0)
     comments_made = Column(Integer, default=0)
     
-    # Relacionamentos
-    missions = relationship("UserMission", back_populates="user")
-    posts = relationship("Post", back_populates="author")
-    post_likes = relationship("PostLike", back_populates="user")
-    post_comments = relationship("PostComment", back_populates="user")
-    chat_messages = relationship("ChatMessage", back_populates="user")
-    ranking = relationship("UserRanking", back_populates="user", uselist=False)
+    # Relacionamentos (temporariamente comentados para evitar dependências circulares)
+    # missions = relationship("UserMission", back_populates="user")
+    # posts = relationship("Post", back_populates="author")
+    # post_likes = relationship("PostLike", back_populates="user")
+    # post_comments = relationship("PostComment", back_populates="user")
+    # chat_messages = relationship("ChatMessage", back_populates="user")
+    # ranking = relationship("UserRanking", back_populates="user", uselist=False)
     
     def __repr__(self):
         return f"<User(id={self.id}, nickname='{self.nickname}')>"

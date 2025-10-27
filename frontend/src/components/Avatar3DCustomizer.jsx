@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, Save, RotateCcw, Palette, User, Sparkles } from 'lucide-react'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
-import { api } from '../services/api'
+import api from '../services/api'
 import { toast } from 'react-hot-toast'
 
 const Avatar3DCustomizer = ({ isOpen, onClose, onSave, currentAvatar }) => {

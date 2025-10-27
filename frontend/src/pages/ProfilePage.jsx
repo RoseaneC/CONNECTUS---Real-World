@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Mail, Calendar, Coins, Trophy, Target, Edit3, X, Camera, Check, Sparkles } from 'lucide-react'
 import { toast } from 'react-hot-toast'
@@ -6,16 +6,20 @@ import { toast } from 'react-hot-toast'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useAuthStore } from '../stores/authStore'
-import { api, getAvatar, updateProfileAvatar } from '../services/api'
+import api, { getAvatar, updateProfileAvatar } from '../services/api'
+import { fetchMyAvatar, saveMyAvatar } from '../services/avatarService'
 import ReadyPlayerMeModal from '../components/avatar/ReadyPlayerMeModal'
+import useFeatureFlags from '../hooks/useFeatureFlags'
 
 const ProfilePage = () => {
   const { user, updateProfile } = useAuthStore()
+  const { rpm, rpmSubdomain } = useFeatureFlags()
   const [isEditing, setIsEditing] = useState(false)
   const [showRPM, setShowRPM] = useState(false)
   // [CONNECTUS PATCH] Substituir qualquer "avatars" por currentAvatar (objeto)
   const [currentAvatar, setCurrentAvatar] = useState({ glb_url: null, png_url: null });
-  const featureRPM = String(import.meta.env.VITE_FEATURE_RPM).toLowerCase() === 'true';
+  // [CONNECTUS PATCH] Avatar do novo serviço
+  const [avatar, setAvatar] = useState({ avatar_url: null, avatar_glb_url: null, avatar_png_url: null });
   const [editData, setEditData] = useState({
     full_name: user?.full_name || '',
     email: user?.email || '',
@@ -44,7 +48,29 @@ const ProfilePage = () => {
     return () => { mounted = false; };
   }, []);
 
+  // [CONNECTUS PATCH] Carregar avatar do novo serviço
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await fetchMyAvatar();
+        setAvatar({
+          avatar_url: data?.avatar_url ?? null,
+          avatar_glb_url: data?.avatar_glb_url ?? null,
+          avatar_png_url: data?.avatar_png_url ?? null,
+        });
+      } catch (e) {
+        console.debug("[CONNECTUS] avatar fetch falhou", e);
+      }
+    })();
+  }, []);
+
   // [CONNECTUS PATCH] Remover carregamento de avatares antigos
+
+  // [CONNECTUS PATCH] Determinar qual avatar usar (priorizando novo serviço)
+  const computedAvatarSrc =
+    (avatar && (avatar.avatar_png_url || avatar.avatar_url)) ||
+    (user && (user.avatar_png_url || user.avatar_url)) ||
+    null;
 
   const handleEdit = () => {
     setIsEditing(true)
@@ -82,11 +108,24 @@ const ProfilePage = () => {
   // [CONNECTUS PATCH] Handler para salvar avatar do Ready Player Me
   async function handleRPMSaved({ avatar_glb_url, avatar_png_url }) {
     try {
-      await updateProfileAvatar({ avatar_glb_url, avatar_png_url });
+      // [CONNECTUS PATCH] Usar novo serviço de avatar
+      await saveMyAvatar({
+        avatar_url: null,
+        glb: avatar_glb_url,
+        png: avatar_png_url
+      });
       
       // Cache-buster para evitar cache da CDN do RPM
       const pngUrlWithCacheBuster = avatar_png_url ? `${avatar_png_url}?v=${Date.now()}` : null;
       
+      // [CONNECTUS PATCH] Atualizar estado do novo serviço
+      setAvatar({
+        avatar_url: null,
+        avatar_glb_url: avatar_glb_url ?? null,
+        avatar_png_url: pngUrlWithCacheBuster,
+      });
+      
+      // [CONNECTUS PATCH] Manter compatibilidade com sistema antigo
       setCurrentAvatar({
         glb_url: avatar_glb_url ?? null,
         png_url: pngUrlWithCacheBuster,
@@ -161,14 +200,14 @@ const ProfilePage = () => {
             {/* [CONNECTUS PATCH] Avatar preview seguro */}
             <div className="flex items-center gap-4">
               <div className="w-24 h-24 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden ring-2 ring-sky-500">
-                {currentAvatar?.png_url ? (
-                  <img src={currentAvatar.png_url} alt="Meu avatar" className="w-full h-full object-cover" />
+                {computedAvatarSrc ? (
+                  <img src={computedAvatarSrc} alt="Meu avatar" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-xs text-slate-300">sem avatar</span>
                 )}
               </div>
 
-              {featureRPM && (
+              {rpm && (
                 <button
                   type="button"
                   onClick={() => { if (import.meta.env.DEV) console.log('[RPM] abrir modal'); setShowRPM(true); }}
@@ -233,14 +272,14 @@ const ProfilePage = () => {
               {/* [CONNECTUS PATCH] Preview do avatar atual */}
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-20 h-20 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden ring-2 ring-sky-500">
-                  {currentAvatar?.png_url ? (
-                    <img src={currentAvatar.png_url} alt="Meu avatar" className="w-full h-full object-cover" />
+                  {computedAvatarSrc ? (
+                    <img src={computedAvatarSrc} alt="Meu avatar" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-xs text-slate-300">sem avatar</span>
                   )}
                 </div>
 
-                {featureRPM && (
+                {rpm && (
                   <button
                     type="button"
                     onClick={() => { if (import.meta.env.DEV) console.log('[RPM] abrir modal'); setShowRPM(true); }}
@@ -306,7 +345,7 @@ const ProfilePage = () => {
                         }}
                       />
                     </div>
-                    {featureRPM && (
+                    {rpm && (
                       <Button
                         onClick={() => { if (import.meta.env.DEV) console.log('[RPM] abrir modal'); setShowRPM(true); }}
                         variant="outline"
@@ -356,7 +395,7 @@ const ProfilePage = () => {
       </AnimatePresence>
 
       {/* [CONNECTUS PATCH] Seção Ready Player Me */}
-      {featureRPM && (
+      {rpm && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -382,11 +421,11 @@ const ProfilePage = () => {
               </Button>
             </div>
             
-            {currentAvatar.png_url ? (
+            {computedAvatarSrc ? (
               <div className="flex items-center space-x-4 p-4 bg-dark-700/50 rounded-lg">
                 <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary-500">
                   <img
-                    src={currentAvatar.png_url}
+                    src={computedAvatarSrc}
                     alt="Avatar atual"
                     className="w-full h-full object-cover"
                   />
@@ -408,7 +447,7 @@ const ProfilePage = () => {
       )}
 
       {/* [CONNECTUS PATCH] Modal Ready Player Me */}
-      {featureRPM && (
+      {rpm && (
         <ReadyPlayerMeModal
           open={showRPM}
           onClose={() => setShowRPM(false)}

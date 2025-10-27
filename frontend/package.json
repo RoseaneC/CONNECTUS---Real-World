@@ -7,12 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "web3:check": "node scripts/web3-check.js",
+    "web3:mint:demo": "node scripts/web3-mint-demo.js"
   },
   "dependencies": {
     "axios": "^1.6.2",
     "buffer": "^6.0.3",
     "emoji-picker-react": "^4.5.16",
+    "ethers": "^6.15.0",
     "framer-motion": "^10.16.16",
     "lucide-react": "^0.294.0",
     "process": "^0.11.10",
@@ -45,4 +48,3 @@
     "vite": "^5.0.0"
   }
 }
-

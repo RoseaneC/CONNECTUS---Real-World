@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # Configurações do banco de dados
-    DATABASE_URL: str = "sqlite:///./connectus.db"
+    DATABASE_URL: str = "sqlite:///app/connectus.db"
     
     # Configurações JWT
     SECRET_KEY: str = "your-secret-key-change-in-production"

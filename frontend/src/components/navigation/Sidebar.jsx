@@ -8,7 +8,8 @@ import {
   Trophy, 
   Settings,
   LogOut,
-  Bot
+  Bot,
+  Coins
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
@@ -19,6 +20,7 @@ const Sidebar = () => {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Perfil', href: '/profile', icon: User },
     { name: 'VEXA IA', href: '/ai', icon: Bot, special: true },
+    { name: 'VEXA Web3', href: '/vexa', icon: Coins, special: true },
     { name: 'Missões', href: '/missions', icon: Target },
     { name: 'Timeline', href: '/timeline', icon: MessageSquare },
     { name: 'Ranking', href: '/ranking', icon: Trophy },
