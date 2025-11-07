@@ -40,14 +40,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Configurações CORS
-    ALLOWED_ORIGINS: list = [
-        "http://localhost:3000", 
-        "http://localhost:5173",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "http://localhost:8080",
-        "http://127.0.0.1:8080"
-    ]
+    # NOTE: CORS is configured in main.py using CORS_ALLOWED_ORIGINS env var
+    # Removed ALLOWED_ORIGINS from Settings to avoid Pydantic JSON parsing conflicts
     
     # Configurações futuras para Web3 (removido Stellar SDK)
     ENABLE_WEB3: bool = False
