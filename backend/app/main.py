@@ -41,9 +41,12 @@ origins = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
     "https://readyplayer.me",
+    # Production origins (hardcoded for reliability)
+    "https://connectus-real-world.vercel.app",
+    "https://connectus-real-world-production.up.railway.app",  # Backend URL (self-reference for health checks)
 ]
 
-# Add production origins from environment variable
+# Add additional production origins from environment variable
 # Format: "https://your-app.vercel.app,https://another-domain.com"
 # IMPORTANT: Always specify exact domains, never use wildcards
 # NOTE: Using CORS_ALLOWED_ORIGINS to avoid conflict with Settings.ALLOWED_ORIGINS (which expects JSON)
@@ -51,10 +54,15 @@ allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
 if allowed_origins_env:
     # Split by comma and add each origin (strip whitespace)
     additional_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
-    origins.extend(additional_origins)
-    print(f"🔒 CORS: Added {len(additional_origins)} production origin(s) from CORS_ALLOWED_ORIGINS")
+    # Remove duplicates
+    for origin in additional_origins:
+        if origin not in origins:
+            origins.append(origin)
+    print(f"🔒 CORS: Added {len(additional_origins)} additional origin(s) from CORS_ALLOWED_ORIGINS")
 
-print(f"🌐 CORS configurado para {len(origins)} origin(s): {origins}")
+print(f"🌐 CORS configurado para {len(origins)} origin(s):")
+for i, origin in enumerate(origins, 1):
+    print(f"   {i}. {origin}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -330,6 +338,17 @@ async def root():
 async def health_check():
     """Verificação de saúde da API"""
     return {"status": "ok"}
+
+@app.get("/cors-info")
+async def cors_info():
+    """Informações sobre configuração CORS (diagnóstico)"""
+    return {
+        "allowed_origins": origins,
+        "total_origins": len(origins),
+        "cors_allowed_origins_env": os.getenv("CORS_ALLOWED_ORIGINS", "not set"),
+        "allow_credentials": True,
+        "note": "Este endpoint ajuda a diagnosticar problemas de CORS"
+    }
 
 # [DEV DEBUG] List routes (only if DEBUG=1)
 DEV_DEBUG = os.getenv("DEBUG", "1") == "1"
