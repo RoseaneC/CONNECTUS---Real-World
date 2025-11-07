@@ -77,3 +77,10 @@ console.log('3. Executar: node frontend/scripts/hackathon-checklist.js');
 console.log('4. Esperado: 6/6 aprovados');
 
 
+
+
+
+
+
+
+

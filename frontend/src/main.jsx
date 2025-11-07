@@ -3,13 +3,15 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { I18nProvider } from "./i18n/useI18n";
+import { checkEnvVars } from "@/utils/checkEnv";
+import { WEB3_CONFIG } from "@/web3/addresses";
 
-// Verificar configuração de ambiente
-if (!import.meta.env.VITE_API_URL) {
-  console.debug("⚠️ VITE_API_URL não configurado!");
-  console.debug("💡 Crie um arquivo .env.local baseado no .env.example:");
-  console.debug("   cp .env.example .env.local");
-  console.debug("   # Edite .env.local com suas configurações");
+checkEnvVars();
+
+if (import.meta.env.DEV) {
+  // eslint-disable-next-line no-console
+  console.log("[WEB3_CONFIG]", WEB3_CONFIG);
 }
 
 const container = document.getElementById("root");
@@ -20,7 +22,9 @@ const root = createRoot(container);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <App />
+      <I18nProvider>
+        <App />
+      </I18nProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );

@@ -6,9 +6,13 @@ import { toast } from 'react-hot-toast'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useMissions } from '../hooks/useMissions'
+import { useI18n } from '../i18n/useI18n'
+import { t as translations } from '../i18n/t'
 
 const MissionsPage = () => {
   const { missions, loading, error, fetchMissions, completeMission } = useMissions()
+  const { lang } = useI18n()
+  const missionsText = translations[lang]?.missions || translations.pt.missions
 
   // Carregar missões ao montar o componente
   useEffect(() => {
@@ -16,27 +20,27 @@ const MissionsPage = () => {
   }, [])
 
   const categories = {
-    school: { name: 'Escola', color: 'bg-blue-500/20', textColor: 'text-blue-400' },
-    study: { name: 'Estudos', color: 'bg-green-500/20', textColor: 'text-green-400' },
-    environment: { name: 'Meio Ambiente', color: 'bg-emerald-500/20', textColor: 'text-emerald-400' },
-    community: { name: 'Comunidade', color: 'bg-purple-500/20', textColor: 'text-purple-400' },
-    default: { name: 'Geral', color: 'bg-gray-500/20', textColor: 'text-gray-400' }
+    school: { name: lang === 'en' ? 'School' : 'Escola', color: 'bg-blue-500/20', textColor: 'text-blue-400' },
+    study: { name: lang === 'en' ? 'Study' : 'Estudos', color: 'bg-green-500/20', textColor: 'text-green-400' },
+    environment: { name: lang === 'en' ? 'Environment' : 'Meio Ambiente', color: 'bg-emerald-500/20', textColor: 'text-emerald-400' },
+    community: { name: lang === 'en' ? 'Community' : 'Comunidade', color: 'bg-purple-500/20', textColor: 'text-purple-400' },
+    default: { name: lang === 'en' ? 'General' : 'Geral', color: 'bg-gray-500/20', textColor: 'text-gray-400' }
   }
 
   const handleCompleteMission = async (missionId) => {
     try {
       await completeMission(missionId)
-      toast.success('Missão completada!')
+      toast.success(missionsText.completeToast)
     } catch (error) {
-      toast.error('Erro ao completar missão')
+      toast.error(missionsText.completeError)
     }
   }
 
   const difficulties = {
-    easy: { name: 'Fácil', color: 'bg-green-500/20', textColor: 'text-green-400' },
-    medium: { name: 'Médio', color: 'bg-yellow-500/20', textColor: 'text-yellow-400' },
-    hard: { name: 'Difícil', color: 'bg-red-500/20', textColor: 'text-red-400' },
-    default: { name: 'Médio', color: 'bg-yellow-500/20', textColor: 'text-yellow-400' }
+    easy: { name: lang === 'en' ? 'Easy' : 'Fácil', color: 'bg-green-500/20', textColor: 'text-green-400' },
+    medium: { name: lang === 'en' ? 'Medium' : 'Médio', color: 'bg-yellow-500/20', textColor: 'text-yellow-400' },
+    hard: { name: lang === 'en' ? 'Hard' : 'Difícil', color: 'bg-red-500/20', textColor: 'text-red-400' },
+    default: { name: lang === 'en' ? 'Medium' : 'Médio', color: 'bg-yellow-500/20', textColor: 'text-yellow-400' }
   }
 
   return (
@@ -48,9 +52,9 @@ const MissionsPage = () => {
         transition={{ duration: 0.6 }}
         className="text-center space-y-4"
       >
-        <h1 className="text-3xl font-bold text-white">Missões</h1>
-        <p className="text-dark-400">
-          Complete missões para ganhar XP, tokens e fazer a diferença!
+        <h1 className="text-3xl font-bold text-white">{missionsText.pageTitle}</h1>
+        <p className="text-dark-400 text-base sm:text-sm">
+          {missionsText.pageSubtitle}
         </p>
       </motion.div>
 
@@ -63,7 +67,7 @@ const MissionsPage = () => {
       >
         <Card variant="glow" className="text-center">
           <div className="flex items-center justify-center space-x-2 mb-2">
-            <Target className="w-5 h-5 text-primary-400" />
+            <Target className="w-5 h-5 text-primary-400" aria-hidden="true" />
             <span className="text-sm font-medium text-dark-400">Total de Missões</span>
           </div>
           <p className="text-2xl font-bold text-white">{missions.length}</p>
@@ -71,7 +75,7 @@ const MissionsPage = () => {
         
         <Card variant="glow" className="text-center">
           <div className="flex items-center justify-center space-x-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-green-400" />
+            <CheckCircle className="w-5 h-5 text-green-400" aria-hidden="true" />
             <span className="text-sm font-medium text-dark-400">Completadas</span>
           </div>
           <p className="text-2xl font-bold text-white">
@@ -81,7 +85,7 @@ const MissionsPage = () => {
         
         <Card variant="glow" className="text-center">
           <div className="flex items-center justify-center space-x-2 mb-2">
-            <Trophy className="w-5 h-5 text-accent-400" />
+            <Trophy className="w-5 h-5 text-accent-400" aria-hidden="true" />
             <span className="text-sm font-medium text-dark-400">Taxa de Sucesso</span>
           </div>
           <p className="text-2xl font-bold text-white">
@@ -105,7 +109,7 @@ const MissionsPage = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-lg ${(categories[mission.category] || categories.default).color}`}>
-                      <Target className={`w-5 h-5 ${(categories[mission.category] || categories.default).textColor}`} />
+                      <Target className={`w-5 h-5 ${(categories[mission.category] || categories.default).textColor}`} aria-hidden="true" />
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-white">
@@ -117,7 +121,7 @@ const MissionsPage = () => {
                   
                   {mission.isCompleted && (
                     <div className="flex items-center space-x-1 text-green-400">
-                      <CheckCircle className="w-5 h-5" />
+                      <CheckCircle className="w-5 h-5" aria-hidden="true" />
                       <span className="text-sm font-medium">Completa</span>
                     </div>
                   )}
@@ -152,13 +156,13 @@ const MissionsPage = () => {
                 {/* Recompensas */}
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-400" />
+                    <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
                     <span className="text-sm text-yellow-400 font-medium">
                       +{mission.xpReward} XP
                     </span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Trophy className="w-4 h-4 text-accent-400" />
+                    <Trophy className="w-4 h-4 text-accent-400" aria-hidden="true" />
                     <span className="text-sm text-accent-400 font-medium">
                       +{mission.tokenReward} Tokens
                     </span>
@@ -170,23 +174,33 @@ const MissionsPage = () => {
               <div className="ml-6 flex flex-col space-y-2">
                 {mission.isCompleted ? (
                   <Button variant="ghost" disabled className="opacity-50">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Completa
+                    <CheckCircle className="w-4 h-4 mr-2" aria-hidden="true" />
+                    {missionsText.complete}
                   </Button>
                 ) : (
                   <>
                     {mission.progress > 0 ? (
                       <Button variant="primary" size="sm">
-                        Continuar
+                        {missionsText.continue}
                       </Button>
                     ) : (
                       <Button variant="primary" size="sm">
-                        Iniciar
+                        {missionsText.start}
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm">
-                      Detalhes
-                    </Button>
+                    <details className="rounded-lg border border-white/10 bg-white/5 p-3 text-left">
+                      <summary className="cursor-pointer text-sm font-medium text-white/80">
+                        {missionsText.validationTitle}
+                      </summary>
+                      <p className="mt-2 text-sm text-white/70">
+                        {missionsText.qrHint}
+                      </p>
+                      <ul className="mt-2 text-sm text-white/70 list-disc pl-5 space-y-1">
+                        {missionsText.validationSteps.map((step) => (
+                          <li key={step}>{step}</li>
+                        ))}
+                      </ul>
+                    </details>
                   </>
                 )}
               </div>
@@ -208,7 +222,7 @@ const MissionsPage = () => {
               <p className="text-dark-400">Resetam a cada 24 horas</p>
             </div>
             <div className="flex items-center space-x-2 text-sm text-dark-400">
-              <Clock className="w-4 h-4" />
+              <Clock className="w-4 h-4" aria-hidden="true" />
               <span>Reset em 12h 34m</span>
             </div>
           </div>
@@ -219,13 +233,13 @@ const MissionsPage = () => {
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-semibold text-white">{mission.title}</h4>
                   <div className="flex items-center space-x-1 text-xs text-accent-400">
-                    <Star className="w-3 h-3" />
+                    <Star className="w-3 h-3" aria-hidden="true" />
                     <span>+{mission.xpReward}</span>
                   </div>
                 </div>
                 <p className="text-sm text-dark-400 mb-3">{mission.description}</p>
                 <Button variant="ghost" size="sm" className="w-full">
-                  Completar
+                  {missionsText.completeAction}
                 </Button>
               </div>
             ))}

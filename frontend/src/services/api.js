@@ -113,8 +113,9 @@ api.interceptors.response.use(
   }
 );
 
-// Export default apenas
+// Export default e named para compatibilidade
 export default api;
+export { api };
 
 // API de Autenticação
 export const authAPI = {

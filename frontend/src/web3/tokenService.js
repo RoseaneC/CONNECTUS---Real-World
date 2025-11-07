@@ -4,14 +4,15 @@
 
 import { ethers, Contract } from 'ethers';
 import VEXA_TOKEN_ABI from './abi/VEXAToken.json';
+import { WEB3_CONFIG } from './addresses';
+import { getProvider } from './provider';
 
-const addr = import.meta.env.VITE_CONTRACT_ADDRESS;
+const hasContract = () => WEB3_CONFIG.isConfigured && !!WEB3_CONFIG.TOKEN_ADDRESS;
 
 function getContract(providerOrSigner) {
-  if (!addr || addr === "0xSEU_CONTRATO_AQUI") return null;
-  if (!providerOrSigner) return null;
+  if (!hasContract() || !providerOrSigner) return null;
   try {
-    return new Contract(addr, VEXA_TOKEN_ABI, providerOrSigner);
+    return new Contract(WEB3_CONFIG.TOKEN_ADDRESS, VEXA_TOKEN_ABI, providerOrSigner);
   } catch (_) {
     return null;
   }
@@ -21,10 +22,11 @@ async function isOwner(provider) {
   const c = getContract(provider);
   if (!c) return false;
   try {
-    const [signer] = await provider.listAccounts();
+    const signer = await provider.getSigner();
     if (!signer) return false;
     const owner = await c.owner();
-    return owner?.toLowerCase?.() === signer?.toLowerCase?.();
+    const address = await signer.getAddress();
+    return owner?.toLowerCase?.() === address?.toLowerCase?.();
   } catch {
     return false;
   }
@@ -47,35 +49,30 @@ class TokenService {
   }
 
   async getContract(readonly = true) {
-    if (!window.ethereum) {
-      throw new Error('MetaMask não está instalado');
+    if (!hasContract()) {
+      return null;
     }
 
+    const provider = await getProvider();
+
     if (readonly) {
-      if (!this.provider) {
-        this.provider = new ethers.BrowserProvider(window.ethereum);
-      }
-      if (!this.contract) {
-        this.contract = getContract(this.provider);
-      }
-      return this.contract;
-    } else {
-      if (!this.signer) {
-        this.provider = new ethers.BrowserProvider(window.ethereum);
-        this.signer = await this.provider.getSigner();
-      }
-      if (!this.contract) {
-        this.contract = getContract(this.signer);
-      }
+      this.provider = provider;
+      this.signer = null;
+      this.contract = getContract(provider);
       return this.contract;
     }
+
+    this.provider = provider;
+    this.signer = await provider.getSigner();
+    this.contract = getContract(this.signer);
+    return this.contract;
   }
 
   async getTokenMeta() {
     try {
       const contract = await this.getContract(true);
       if (!contract) {
-        return { ok: false, error: 'Token contract not configured' };
+        return { ok: false, error: 'Contrato não configurado' };
       }
       
       const [name, symbol, decimals, totalSupply] = await Promise.all([
@@ -103,7 +100,7 @@ class TokenService {
     try {
       const contract = await this.getContract(true);
       if (!contract) {
-        return { ok: false, error: 'Token contract not configured' };
+        return { ok: false, error: 'Contrato não configurado' };
       }
       
       const balance = await contract.balanceOf(address);
@@ -122,7 +119,7 @@ class TokenService {
     try {
       const contract = await this.getContract(false);
       if (!contract) {
-        return { ok: false, error: 'Token contract not configured' };
+        return { ok: false, error: 'Contrato não configurado' };
       }
       
       const decimals = await contract.decimals();
@@ -161,7 +158,7 @@ class TokenService {
     try {
       const contract = await this.getContract(true);
       if (!contract) {
-        console.debug('Token contract not configured; skipping listeners');
+        console.debug('Contrato não configurado; listeners ignorados');
         return;
       }
       

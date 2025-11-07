@@ -108,3 +108,10 @@ CREATE INDEX IF NOT EXISTS idx_mission_evidences_hash (evidence_hash);
 -- feature_flags: Controle de funcionalidades do sistema
 
 
+
+
+
+
+
+
+

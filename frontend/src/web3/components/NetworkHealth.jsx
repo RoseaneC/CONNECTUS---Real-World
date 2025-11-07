@@ -9,6 +9,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { WEB3_CONFIG } from '@/web3/addresses';
+import { getProvider } from '@/web3/provider';
 import { useWallet } from '../useWallet';
 
 const NetworkHealth = () => {
@@ -19,10 +21,14 @@ const NetworkHealth = () => {
   // Verificar status do contrato
   useEffect(() => {
     const checkContract = async () => {
-      const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS;
-      
-      if (!contractAddress || contractAddress === '0x0000000000000000000000000000000000000000') {
-        setContractStatus('invalid');
+      if (!WEB3_CONFIG.isConfigured) {
+        setContractStatus('demo');
+        return;
+      }
+
+      const addresses = [WEB3_CONFIG.TOKEN_ADDRESS, WEB3_CONFIG.SHOP_ADDRESS].filter(Boolean);
+      if (!addresses.length) {
+        setContractStatus('demo');
         return;
       }
 
@@ -32,16 +38,12 @@ const NetworkHealth = () => {
       }
 
       try {
-        const { ethers } = await import('ethers');
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const code = await provider.getCode(contractAddress);
-        
-        if (code === '0x') {
-          setContractStatus('no-contract');
-        } else {
-          setContractStatus('valid');
-        }
+        const provider = await getProvider();
+        const codes = await Promise.all(addresses.map((addr) => provider.getCode(addr)));
+        const hasInvalid = codes.some((code) => !code || code === '0x');
+        setContractStatus(hasInvalid ? 'no-contract' : 'valid');
       } catch (error) {
+        console.error('Erro ao verificar contrato:', error);
         setContractStatus('error');
       }
     };
@@ -70,15 +72,15 @@ const NetworkHealth = () => {
   const getContractStatusText = (status) => {
     switch (status) {
       case 'valid':
-        return { text: 'Contrato válido', color: 'text-green-600', bg: 'bg-green-50' };
-      case 'invalid':
-        return { text: 'Endereço inválido', color: 'text-red-600', bg: 'bg-red-50' };
+        return { text: 'Contrato ativo', color: 'text-green-600', bg: 'bg-green-50' };
+      case 'demo':
+        return { text: 'Contrato não configurado (demo)', color: 'text-yellow-600', bg: 'bg-yellow-50' };
       case 'no-contract':
-        return { text: 'Contrato não encontrado', color: 'text-yellow-600', bg: 'bg-yellow-50' };
+        return { text: 'Contrato não encontrado on-chain', color: 'text-yellow-600', bg: 'bg-yellow-50' };
       case 'no-metamask':
         return { text: 'MetaMask não encontrado', color: 'text-gray-600', bg: 'bg-gray-50' };
       case 'error':
-        return { text: 'Erro ao verificar', color: 'text-red-600', bg: 'bg-red-50' };
+        return { text: 'Não foi possível verificar o contrato', color: 'text-red-600', bg: 'bg-red-50' };
       default:
         return { text: 'Verificando...', color: 'text-gray-600', bg: 'bg-gray-50' };
     }
@@ -89,13 +91,13 @@ const NetworkHealth = () => {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4">
       <h3 className="text-sm font-medium text-gray-800 mb-3">
-        🌐 Status da Rede
+        🌐 Conexão da Rede
       </h3>
       
       <div className="space-y-3">
         {/* Rede Atual */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Rede:</span>
+          <span className="text-sm text-gray-600">Rede atual:</span>
           <div className="flex items-center space-x-2">
             <span className={`text-sm font-medium ${isSepolia ? 'text-green-600' : 'text-orange-600'}`}>
               {getNetworkName(chainId)}
@@ -106,7 +108,7 @@ const NetworkHealth = () => {
 
         {/* Status do Contrato */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Contrato:</span>
+          <span className="text-sm text-gray-600">Contrato ativo:</span>
           <div className={`px-2 py-1 rounded-full text-xs font-medium ${contractStatusInfo.bg} ${contractStatusInfo.color}`}>
             {contractStatusInfo.text}
           </div>
@@ -114,11 +116,11 @@ const NetworkHealth = () => {
 
         {/* Flag de Mint */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Mint:</span>
+          <span className="text-sm text-gray-600">Gerar tokens:</span>
           <div className={`px-2 py-1 rounded-full text-xs font-medium ${
             mintEnabled ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-600'
           }`}>
-            {mintEnabled ? 'Habilitado' : 'Desabilitado'}
+            {mintEnabled ? 'Disponível' : 'Desabilitado (demo)'}
           </div>
         </div>
 
@@ -149,5 +151,8 @@ const NetworkHealth = () => {
 };
 
 export default NetworkHealth;
+
+
+
 
 

@@ -6,10 +6,10 @@ import {
   Target, 
   MessageSquare, 
   Trophy, 
-  Settings,
   LogOut,
   Bot,
-  Coins
+  Coins,
+  TrendingUp
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
@@ -19,9 +19,17 @@ const Sidebar = () => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Perfil', href: '/profile', icon: User },
-    { name: 'VEXA IA', href: '/ai', icon: Bot, special: true },
-    { name: 'VEXA Web3', href: '/vexa', icon: Coins, special: true },
+    { name: 'VEXA IA', href: '/ai', icon: Bot, special: true, badge: 'AI' },
+    {
+      name: 'Sua Carteira',
+      href: '/vexa',
+      icon: Coins,
+      special: true,
+      badge: 'Demo',
+      tooltip: 'Conecte sua carteira real ou use o modo demonstração (sem dinheiro real).'
+    },
     { name: 'Missões', href: '/missions', icon: Target },
+    { name: 'Impact Score', href: '/impact', icon: TrendingUp },
     { name: 'Timeline', href: '/timeline', icon: MessageSquare },
     { name: 'Ranking', href: '/ranking', icon: Trophy },
     { name: 'Chat', href: '/chat', icon: MessageSquare },
@@ -53,6 +61,7 @@ const Sidebar = () => {
           <NavLink
             key={item.name}
             to={item.href}
+            title={item.tooltip}
             className={({ isActive }) =>
               `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
                 item.special
@@ -69,7 +78,7 @@ const Sidebar = () => {
             <span className="font-medium">{item.name}</span>
             {item.special && (
               <span className="ml-auto px-2 py-1 text-xs bg-blue-500/20 text-blue-400 rounded-full">
-                AI
+                {item.badge || 'AI'}
               </span>
             )}
           </NavLink>

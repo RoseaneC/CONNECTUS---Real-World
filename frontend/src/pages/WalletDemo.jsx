@@ -3,11 +3,13 @@ import { Wallet, TrendingUp, AlertCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
 import WalletPanel from '../components/wallet/WalletPanel';
 import StakePanel from '../components/wallet/StakePanel';
+import { WEB3_CONFIG } from '@/web3/addresses';
 
 const WalletDemo = () => {
-  const isDemo = import.meta.env?.VITE_WEB3_DEMO_MODE === 'true';
-  const contractAddress = import.meta.env?.VITE_CONTRACT_ADDRESS;
-  const showRealModeWarning = !isDemo && !contractAddress;
+  const isDemo = WEB3_CONFIG.DEMO_MODE;
+  const showRealModeWarning = !isDemo && !WEB3_CONFIG.isConfigured;
+  const cfgDump = JSON.stringify(WEB3_CONFIG, null, 2);
+  const title = `Carteira VEXA${isDemo ? ' (modo demo)' : ''}`;
 
   return (
     <div className="space-y-6">
@@ -42,8 +44,9 @@ const WalletDemo = () => {
             <div>
               <p className="text-red-400 font-medium">Configuração Web3 Real Incompleta</p>
               <p className="text-red-300/80 text-sm">
-                Defina VITE_CONTRACT_ADDRESS em .env.local ou use VITE_WEB3_DEMO_MODE=true para demonstrar.
+                Defina VITE_SEPOLIA_TOKEN_ADDRESS e VITE_SEPOLIA_TOKENSHOP_ADDRESS em frontend/.env.local e confirme que VITE_WEB3_DEMO_MODE=false.
               </p>
+              <pre className="mt-2 text-xs text-red-200/80 bg-red-500/10 rounded p-3 overflow-auto">{cfgDump}</pre>
             </div>
           </div>
         </motion.div>
@@ -56,8 +59,11 @@ const WalletDemo = () => {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold text-white">Carteira VEXA</h1>
-          <p className="text-dark-400">Gerencie seus tokens e stakes</p>
+          <h1 className="text-3xl font-bold text-white">{title}</h1>
+          <p className="text-dark-400">
+            Gerencie suas moedas e missões simuladas.
+            <span className="block text-sm opacity-70">Manage your simulated wallet and tokens.</span>
+          </p>
         </div>
       </motion.div>
 

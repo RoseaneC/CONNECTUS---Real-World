@@ -57,7 +57,7 @@ class GlobalErrorHandler extends Component {
                 🏠 Ir para Início
               </button>
             </div>
-            {process.env.NODE_ENV === 'development' && (
+            {import.meta.env && import.meta.env.MODE === 'development' && (
               <details className="mt-6 text-left">
                 <summary className="text-gray-400 cursor-pointer">
                   Detalhes do erro (desenvolvimento)

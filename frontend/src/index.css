@@ -7,6 +7,16 @@
     @apply border-gray-700;
   }
   
+  :root {
+    --focus-ring-color: rgba(8, 200, 255, 0.6);
+  }
+
+  *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring-color);
+    border-radius: 0.6rem;
+  }
+
   body {
     @apply bg-gray-900 text-white;
     font-feature-settings: "rlig" 1, "calt" 1;

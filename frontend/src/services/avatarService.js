@@ -5,12 +5,13 @@ export async function fetchMyAvatar() {
   return data; // { avatar_url, avatar_glb_url, avatar_png_url }
 }
 
-export async function saveMyAvatar({ avatar_url, glb, png }) {
+export async function saveMyAvatar({ avatar_url, glb, png, thumbnail }) {
   const payload = {
     avatar_url: avatar_url ?? null,
-    avatar_glb_url: glb ?? null,
-    avatar_png_url: png ?? null,
+    glb_url: glb ?? null,
+    png_url: png ?? null,
+    thumbnail_url: thumbnail ?? null,
   };
-  const { data } = await api.put("/avatars", payload);
+  const { data } = await api.post("/avatars", payload);
   return data;
 }

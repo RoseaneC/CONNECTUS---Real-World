@@ -11,25 +11,63 @@ import {
   TrendingUp
 } from 'lucide-react'
 
+import { isDemo, demoRankingTop5, demoMyRankingPosition } from '@/utils/demoSeed'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useRanking } from '../hooks/useRanking'
 
 const RankingPage = () => {
   const [activeTab, setActiveTab] = useState('overall')
-  const { ranking, loading, error, fetchRanking } = useRanking()
+  const { loading, error, fetchRanking } = useRanking()
+  const [displayRanking, setDisplayRanking] = useState([])
+  const [usingDemoData, setUsingDemoData] = useState(false)
+
+  const normalizeRanking = (data = []) =>
+    (Array.isArray(data) ? data : []).map((item, index) => ({
+      ...item,
+      position: item.position ?? index + 1,
+      name: item.name || item.full_name || item.nickname || `Aluno ${index + 1}`,
+      nickname: item.nickname || item.username || `aluno${index + 1}`,
+      level: item.level ?? item.current_level ?? 1,
+      xp: item.xp ?? item.total_xp ?? 0,
+      tokens: item.tokens ?? item.total_tokens ?? 0,
+      missions: item.missions ?? item.total_missions ?? 0,
+    }))
 
   // Carregar ranking ao montar o componente
   useEffect(() => {
-    fetchRanking()
+    const loadRanking = async () => {
+      try {
+        const data = await fetchRanking()
+        if (Array.isArray(data) && data.length > 0) {
+          setDisplayRanking(normalizeRanking(data))
+          setUsingDemoData(false)
+        } else if (isDemo) {
+          setDisplayRanking(normalizeRanking(demoRankingTop5))
+          setUsingDemoData(true)
+        } else {
+          setDisplayRanking([])
+          setUsingDemoData(false)
+        }
+      } catch (err) {
+        if (isDemo) {
+          console.warn('Ranking demo fallback ativado:', err)
+          setDisplayRanking(normalizeRanking(demoRankingTop5))
+          setUsingDemoData(true)
+        }
+      }
+    }
+
+    loadRanking()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Usar os mesmos dados para todas as abas
   const rankings = {
-    overall: ranking,
-    xp: ranking,
-    tokens: ranking,
-    missions: ranking
+    overall: displayRanking,
+    xp: displayRanking,
+    tokens: displayRanking,
+    missions: displayRanking
   }
 
   const tabs = [
@@ -67,8 +105,16 @@ const RankingPage = () => {
     }
   }
 
+  const showDemoBanner = isDemo && usingDemoData
+  const myPositionDisplay = usingDemoData ? `#${demoMyRankingPosition}` : '#15'
+
   return (
     <div className="space-y-6">
+      {showDemoBanner && (
+        <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-100 text-xs px-3 py-2">
+          Visualização com <b>dados de demonstração</b>. No ambiente real, estes números vêm das suas ações.
+        </div>
+      )}
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -306,7 +352,7 @@ const RankingPage = () => {
             </div>
             
             <div className="text-right">
-              <p className="text-2xl font-bold text-primary-400">#15</p>
+              <p className="text-2xl font-bold text-primary-400">{myPositionDisplay}</p>
               <p className="text-sm text-dark-400">Posição atual</p>
             </div>
           </div>

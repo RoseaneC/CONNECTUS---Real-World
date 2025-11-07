@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ethers } from "ethers"
 import { 
   Wallet, 
   Coins, 
@@ -16,10 +15,13 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import { WEB3_CONFIG } from '@/web3/addresses'
+import { connectWallet as connectWalletWeb3, ensureChain, getProvider } from '@/web3/provider'
 
 const VexaPage = () => {
   const navigate = useNavigate()
-  const isDemoMode = import.meta.env.VITE_WEB3_DEMO_MODE === 'true'
+  const isDemoMode = WEB3_CONFIG.DEMO_MODE
+  const hasOnchainConfig = WEB3_CONFIG.isConfigured
   
   // [WEB3 DEMO] Redirect /vexa → /wallet when demo is active
   useEffect(() => {
@@ -41,6 +43,8 @@ const VexaPage = () => {
   const [stakingEnabled, setStakingEnabled] = useState(false)
   const [tiers, setTiers] = useState([])
   const [positions, setPositions] = useState([])
+  const isConnected = Boolean(status?.verified)
+  const web3ConfigDump = JSON.stringify(WEB3_CONFIG, null, 2)
 
   async function fetchStatus() {
     try {
@@ -109,24 +113,31 @@ const VexaPage = () => {
     }
   }, [flags])
 
-  async function connectWallet() {
-    if (!window.ethereum) {
-      alert("MetaMask não detectada. Instale a extensão MetaMask para continuar.")
+  async function handleConnectWallet() {
+    if (!WEB3_CONFIG.isConfigured) {
+      alert("Contrato não configurado. Ajuste o arquivo .env.local.")
       return
     }
 
     setLoading(true)
     try {
-      await window.ethereum.request({ method: "eth_requestAccounts" })
-      
-      // 1) pedir mensagem
-      const { data: req } = await api.post("/wallet/address/request-message")
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const signature = await signer.signMessage(req.message)
-      const address = await signer.getAddress()
+      const result = await connectWalletWeb3()
+      if (!result.ok) {
+        throw new Error(result.msg || 'Falha ao conectar carteira')
+      }
 
-      // 2) verificar no backend
+      const status = await ensureChain()
+      if (!status.ok) {
+        throw new Error(status.msg || 'Rede incorreta')
+      }
+
+      const provider = getProvider()
+      const signer = await provider.getSigner()
+      const address = result.accounts?.[0] || (await signer.getAddress())
+
+      const { data: req } = await api.post("/wallet/address/request-message")
+      const signature = await signer.signMessage(req.message)
+
       await api.post("/wallet/address/verify", {
         address,
         signature,
@@ -137,14 +148,15 @@ const VexaPage = () => {
       alert("Carteira conectada com sucesso!")
     } catch (error) {
       console.error("Erro ao conectar carteira:", error)
-      alert("Erro ao conectar carteira. Tente novamente.")
+      const msg = error?.message || "Erro ao conectar carteira. Tente novamente."
+      alert(msg)
     } finally {
       setLoading(false)
     }
   }
 
   async function requestWithdraw() {
-    const amt = prompt("Quantidade de VEXA para sacar (stub):")
+    const amt = prompt("Quantos VEXA você quer sacar? (modo demo)")
     if (!amt) return
     const n = parseInt(amt, 10)
     if (!Number.isFinite(n) || n <= 0) {
@@ -154,7 +166,7 @@ const VexaPage = () => {
 
     try {
       await api.post("/wallet/withdraw-intent", { amount: n })
-      alert("Solicitação registrada (pending).")
+      alert("Solicitação registrada no modo demo.")
       await fetchTransfers()
     } catch (error) {
       console.error("Erro ao solicitar saque:", error)
@@ -163,7 +175,7 @@ const VexaPage = () => {
   }
 
   async function openStake(tierId) {
-    const amt = prompt("Quantidade de VEXA para stake:")
+    const amt = prompt("Quantos VEXA você quer investir?")
     if (!amt) return
     const n = parseInt(amt, 10)
     if (!Number.isFinite(n) || n <= 0) {
@@ -205,8 +217,10 @@ const VexaPage = () => {
 
   const stats = [
     {
-      title: 'Saldo VEXA',
+      title: 'Saldo (VEXA)',
       value: user?.tokens_available ? parseFloat(user.tokens_available).toFixed(2) : '0.00',
+      unit: ' VEXA',
+      tooltip: 'Saldo de tokens simulados (modo demo). Cada missão completada adiciona VEXA nesta carteira.',
       icon: Coins,
       color: 'text-yellow-400',
       bgColor: 'bg-yellow-500/20',
@@ -240,13 +254,48 @@ const VexaPage = () => {
         className="text-center space-y-4"
       >
         <h1 className="text-3xl font-bold text-white">
-          🌐 VEXA Web3
+          🌐 Carteira de Demonstração (sem dinheiro real)
         </h1>
         <p className="text-dark-400 max-w-2xl mx-auto">
-          Conecte sua carteira e interaja com tokens VEXA na blockchain. 
-          Sistema seguro com verificação de posse via assinatura.
+          Este é um ambiente de demonstração. Nenhuma transação usa dinheiro real.
+          <span className="block opacity-70 text-sm">Quando o contrato VEXA estiver ativo na rede Scroll, você poderá alternar para o modo real.</span>
         </p>
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <span className="text-xs bg-indigo-500/20 border border-indigo-400/40 px-2 py-1 rounded-md text-indigo-200">
+            Rede: Scroll testnet
+          </span>
+          <span
+            className={`text-xs px-2 py-1 rounded-md ${
+              isConnected
+                ? 'bg-green-500/20 text-green-300 border border-green-400/40'
+                : 'bg-red-500/20 text-red-300 border border-red-400/40'
+            }`}
+          >
+            {isConnected ? 'Status: Conectado' : 'Status: Desconectado'}
+          </span>
+        </div>
       </motion.div>
+
+      {isDemoMode && (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 text-yellow-100 text-sm px-4 py-3 mb-4">
+          🧪 Modo Demo Ativado — as transações são apenas simulações.
+        </div>
+      )}
+
+      {!hasOnchainConfig && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.05 }}
+          className="bg-yellow-500/10 border border-yellow-500/40 text-yellow-200 rounded-lg p-4"
+        >
+          <p className="text-sm">
+            Contratos Sepolia não configurados. Ajuste <code>frontend/.env.local</code> com
+            os endereços <code>VITE_SEPOLIA_TOKEN_ADDRESS</code> e <code>VITE_SEPOLIA_TOKENSHOP_ADDRESS</code>.
+          </p>
+          <pre className="mt-2 text-xs text-yellow-100/80 bg-yellow-500/5 rounded p-3 overflow-auto">{web3ConfigDump}</pre>
+        </motion.div>
+      )}
 
       {/* Estatísticas */}
       <motion.div
@@ -260,9 +309,17 @@ const VexaPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-dark-400">{stat.title}</p>
-                <p className={`text-2xl font-bold ${stat.color}`}>
-                  {stat.value}
-                </p>
+                <div className={`flex items-center gap-2 text-2xl font-bold ${stat.color}`}>
+                  <span>{stat.value}{stat.unit || ''}</span>
+                  {stat.tooltip && (
+                    <span
+                      title={stat.tooltip}
+                      className="text-sm text-dark-400 cursor-help"
+                    >
+                      ℹ️
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-green-400 flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   {stat.change}
@@ -291,7 +348,7 @@ const VexaPage = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white flex items-center">
                 <Wallet className="w-6 h-6 mr-2" />
-                Carteira Web3 (testnet)
+                Carteira Web3 (modo demo)
               </h2>
               {status.verified && (
                 <div className="flex items-center text-green-400">
@@ -304,7 +361,7 @@ const VexaPage = () => {
             {status.verified ? (
               <div className="space-y-4">
                 <div className="bg-dark-700/50 rounded-lg p-4">
-                  <div className="text-sm text-dark-400 mb-1">Endereço vinculado:</div>
+                  <div className="text-sm text-dark-400 mb-1">Endereço (demo):</div>
                   <div className="font-mono text-white break-all">
                     {status.address}
                   </div>
@@ -317,7 +374,7 @@ const VexaPage = () => {
                       className="w-full"
                       variant="primary"
                     >
-                      Solicitar saque (stub)
+                      Adicionar tokens de teste
                     </Button>
                     <p className="text-xs text-dark-400 text-center">
                       Esta é uma versão de demonstração. O saque será processado quando ativado.
@@ -333,12 +390,13 @@ const VexaPage = () => {
             ) : (
               <div className="space-y-4">
                 <Button 
-                  onClick={connectWallet} 
+                  onClick={handleConnectWallet}
                   className="w-full"
                   variant="primary"
                   disabled={loading}
+                  title="Para testar o modo real, conecte sua carteira na rede Scroll testnet."
                 >
-                  {loading ? "Conectando..." : "Conectar carteira (assinar mensagem)"}
+                  {loading ? "Conectando..." : "Conectar Carteira Real (opcional)"}
                 </Button>
                 <p className="text-xs text-dark-400 text-center">
                   Usaremos testnet quando ativado. Você assina uma mensagem para provar a posse da carteira — sem custo de gas.

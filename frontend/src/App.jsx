@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './context/AuthContext'
 import GlobalErrorHandler from './components/GlobalErrorHandler'
@@ -21,29 +21,16 @@ import DebugAuthPage from './pages/DebugAuthPage'
 import AIPage from './pages/AIPage'
 import VexaPage from './pages/Vexa'
 import WalletDemo from './pages/WalletDemo'
+import PlayPage from './pages/PlayPage'
+import ImpactScore from './pages/ImpactScore'
+import DebugPill from './components/dev/DebugPill'
 
 // Componentes
 import MainLayout from './layouts/MainLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 
-function App() {
+function AppRoutes() {
   return (
-    <GlobalErrorHandler>
-      <Router>
-        <AuthProvider>
-          <div className="min-h-screen bg-gray-900">
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#1f2937',
-                color: '#f9fafb',
-                border: '1px solid #374151'
-              }
-            }}
-          />
-          
           <Routes>
             {/* Rotas públicas */}
             <Route path="/" element={<HomePage />} />
@@ -119,7 +106,43 @@ function App() {
                 </MainLayout>
               </ProtectedRoute>
             } />
+            <Route path="/play" element={
+              <ProtectedRoute>
+                <PlayPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/player" element={<Navigate to="/play" replace />} />
+            <Route path="/impact" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ImpactScore />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
           </Routes>
+  )
+}
+
+function App() {
+  return (
+    <GlobalErrorHandler>
+      <Router>
+        <AuthProvider>
+          <div className="min-h-screen bg-gray-900">
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#1f2937',
+                color: '#f9fafb',
+                border: '1px solid #374151'
+              }
+            }}
+          />
+          
+          <AppRoutes />
+          <DebugPill />
         </div>
         </AuthProvider>
       </Router>

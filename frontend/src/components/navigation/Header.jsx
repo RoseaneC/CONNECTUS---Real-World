@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Bell, 
@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useMockNotifications } from '../../hooks/useMockData'
+import { useI18n } from '../../i18n/useI18n'
+import { t } from '../../i18n/t'
 
 const Header = () => {
   const { user } = useAuth()
@@ -16,7 +18,12 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  
+  const { lang, setLang } = useI18n()
+  const strings = t[lang] || t.pt
+  const menuToggleLabel = lang === 'en' ? 'Toggle navigation menu' : 'Alternar menu de navegação'
+  const notificationsLabel = lang === 'en' ? 'Notifications' : 'Notificações'
+  const settingsLabel = lang === 'en' ? 'Settings' : 'Configurações'
+
   const { notifications, fetchNotifications } = useMockNotifications()
 
   // Carregar notificações ao montar o componente
@@ -45,32 +52,53 @@ const Header = () => {
         <div className="flex items-center space-x-4">
           {/* Botão mobile menu */}
           <button
+            aria-label={menuToggleLabel}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden p-2 rounded-lg hover:bg-dark-700/50 transition-colors"
           >
             {isMobileMenuOpen ? (
-              <X className="w-5 h-5 text-dark-300" />
+              <X className="w-5 h-5 text-dark-300" aria-hidden="true" />
             ) : (
-              <Menu className="w-5 h-5 text-dark-300" />
+              <Menu className="w-5 h-5 text-dark-300" aria-hidden="true" />
             )}
           </button>
 
           {/* Título da página */}
           <h2 className="text-xl font-semibold text-white">
-            Bem-vindo de volta, {user?.nickname || 'Usuário'}! 👋
+            {strings.header.welcome}, {user?.nickname || 'Usuário'}! 👋
           </h2>
         </div>
 
         {/* Lado direito */}
         <div className="flex items-center space-x-4">
+          {/* Toggle idioma */}
+          <div className="flex items-center gap-1 text-xs" aria-label={strings.header.toggleLabel}>
+            <button
+              type="button"
+              className={`px-2 py-1 rounded focus-visible:ring-2 focus-visible:ring-cyan-400/80 ${lang === 'pt' ? 'bg-white/10 text-white' : 'text-dark-300 hover:bg-white/5'}`}
+              aria-pressed={lang === 'pt'}
+              onClick={() => setLang('pt')}
+            >
+              PT
+            </button>
+            <button
+              type="button"
+              className={`px-2 py-1 rounded focus-visible:ring-2 focus-visible:ring-cyan-400/80 ${lang === 'en' ? 'bg-white/10 text-white' : 'text-dark-300 hover:bg-white/5'}`}
+              aria-pressed={lang === 'en'}
+              onClick={() => setLang('en')}
+            >
+              EN
+            </button>
+          </div>
+
           {/* Barra de pesquisa */}
           <div className="relative">
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               className="p-2 rounded-lg hover:bg-dark-700/50 transition-colors"
-              title="Pesquisar"
+              title={strings.header.searchPlaceholder}
             >
-              <Search className="w-5 h-5 text-dark-300" />
+              <Search className="w-5 h-5 text-dark-300" aria-hidden="true" />
             </button>
             
             {isSearchOpen && (
@@ -81,10 +109,13 @@ const Header = () => {
                 className="absolute right-0 top-full mt-2 w-80 bg-dark-800 border border-dark-700 rounded-lg shadow-xl z-50"
               >
                 <div className="p-4">
+                  <label htmlFor="header-search" className="sr-only">{strings.header.searchPlaceholder}</label>
                   <input
+                    id="header-search"
                     type="text"
-                    placeholder="Pesquisar posts, usuários, missões..."
+                    placeholder={strings.header.searchPlaceholder}
                     className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500"
+                    aria-label={strings.header.searchPlaceholder}
                     autoFocus
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
@@ -107,9 +138,9 @@ const Header = () => {
             <button 
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className="p-2 rounded-lg hover:bg-dark-700/50 transition-colors relative"
-              title="Notificações"
+              title={notificationsLabel}
             >
-              <Bell className="w-5 h-5 text-dark-300" />
+              <Bell className="w-5 h-5 text-dark-300" aria-hidden="true" />
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center">
                 {notifications.filter(n => !n.read).length}
               </span>
@@ -145,9 +176,9 @@ const Header = () => {
             <button 
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
               className="p-2 rounded-lg hover:bg-dark-700/50 transition-colors"
-              title="Configurações"
+              title={settingsLabel}
             >
-              <Settings className="w-5 h-5 text-dark-300" />
+              <Settings className="w-5 h-5 text-dark-300" aria-hidden="true" />
             </button>
             
             {isSettingsOpen && (

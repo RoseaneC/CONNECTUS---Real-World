@@ -16,11 +16,48 @@ import {
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
+import { isDemo, demoTimeline, getDemoUser } from '@/utils/demoSeed'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+
+// utils locais do componente
+function getInitials(name) {
+  if (!name) return 'U'
+  const parts = name.trim().split(/\s+/).slice(0, 2)
+  return parts.map((p) => (p && p[0] ? p[0].toUpperCase() : '')).join('') || 'U'
+}
+
+function parseAvatar(rawAvatar, name) {
+  let url = null
+  let emoji = null
+
+  if (typeof rawAvatar === 'string') {
+    const trimmed = rawAvatar.trim()
+
+    if (trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        const candidates = [parsed.url, parsed.src, parsed.image, parsed.avatar, parsed.avatarUrl].filter(Boolean)
+        url = candidates.find((value) => typeof value === 'string') || null
+        if (typeof parsed.emoji === 'string') emoji = parsed.emoji
+      } catch (_e) {
+        // ignora erros de parse
+      }
+    } else {
+      url = trimmed
+    }
+  }
+
+  if (!url && name) {
+    const seed = encodeURIComponent(name)
+    url = `https://api.dicebear.com/7.x/thumbs/svg?seed=${seed}`
+  }
+
+  return { url, emoji, initials: getInitials(name) }
+}
 
 const TimelinePage = () => {
   const { user } = useAuth()
@@ -33,6 +70,34 @@ const TimelinePage = () => {
   const [searchResults, setSearchResults] = useState([])
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [showPostMenu, setShowPostMenu] = useState(null)
+  const [usingDemoData, setUsingDemoData] = useState(false)
+
+  const buildDemoPosts = () =>
+    demoTimeline.map((item, index) => {
+      const author = getDemoUser(item.authorId)
+
+      return {
+        id: item.id,
+        content: item.text,
+        created_at: item.createdAt,
+        likes_count: item.likes ?? Math.max(12 - index * 2, 4),
+        comments_count: item.comments ?? 2,
+        shares_count: item.shares ?? 1,
+        category: item.category,
+        user: {
+          full_name: author?.name || `Aluno Connectus ${index + 1}`,
+          nickname: author?.nickname || `aluno${index + 1}`,
+          avatar_url: author?.avatarUrl,
+          avatar: author?.avatarUrl,
+        }
+      }
+    })
+
+  const applyDemoTimeline = () => {
+    setPosts(buildDemoPosts())
+    setUsingDemoData(true)
+    setError(null)
+  }
 
   // Carregar timeline
   const fetchTimeline = async () => {
@@ -40,12 +105,27 @@ const TimelinePage = () => {
       setLoading(true)
       setError(null)
       const response = await api.get('/posts/timeline?limit=20&offset=0')
-      setPosts(response.data)
-      console.log('✅ Timeline carregada:', response.data)
+      const data = response.data
+      if (Array.isArray(data) && data.length > 0) {
+        setPosts(data)
+        setUsingDemoData(false)
+        console.log('✅ Timeline carregada:', data)
+      } else if (isDemo) {
+        console.warn('ℹ️ Timeline vazia — utilizando dados de demonstração')
+        applyDemoTimeline()
+      } else {
+        setPosts([])
+        setUsingDemoData(false)
+      }
     } catch (error) {
       console.error('❌ Erro ao carregar timeline:', error)
-      setError('Erro ao carregar posts')
-      toast.error('Erro ao carregar timeline')
+      if (isDemo) {
+        console.warn('ℹ️ Aplicando timeline de demonstração após erro na API')
+        applyDemoTimeline()
+      } else {
+        setError('Erro ao carregar posts')
+        toast.error('Erro ao carregar timeline')
+      }
     } finally {
       setLoading(false)
     }
@@ -143,7 +223,12 @@ const TimelinePage = () => {
   }, [])
 
   const getAvatarUrl = (avatarId) => {
-    return `/static/avatars/${avatarId || 'avatar_1'}.png`
+    if (!avatarId) {
+      return '/static/avatars/avatar_1.png'
+    }
+    if (typeof avatarId === 'string' && (avatarId.startsWith('http') || avatarId.startsWith('/')))
+      return avatarId
+    return `/static/avatars/${avatarId}.png`
   }
 
   const formatDate = (dateString) => {
@@ -297,117 +382,137 @@ const TimelinePage = () => {
             </Button>
           </Card>
         ) : (
-          posts.map((post, index) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-            >
-              <Card className="p-6">
-                <div className="flex items-start space-x-4">
-                  {/* Avatar 3D */}
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center flex-shrink-0 shadow-lg">
-                    {post.user?.avatar && typeof post.user.avatar === 'string' && post.user.avatar.startsWith('{') ? (
-                      // Avatar 3D personalizado (JSON)
-                      <span className="text-lg">
-                        {JSON.parse(post.user.avatar).emoji || post.user?.nickname?.charAt(0).toUpperCase() || 'U'}
-                      </span>
-                    ) : (
-                      // Avatar padrão ou emoji simples
-                      <span className="text-sm font-bold text-white">
-                        {post.user?.avatar || post.user?.nickname?.charAt(0).toUpperCase() || 'U'}
-                      </span>
-                    )}
-                  </div>
+          posts.map((post, index) => {
+            const authorName = post.user?.full_name || post.user?.nickname || 'Usuário Connectus'
+            const rawAvatar = post.user?.avatar || post.user?.avatar_url || post.user?.avatarUrl || ''
+            const { url: avatarUrl, initials } = parseAvatar(rawAvatar, authorName)
+            const authorHandle = post.user?.nickname || 'usuario'
 
-                  {/* Conteúdo */}
-                  <div className="flex-1 min-w-0">
-                    {/* Header */}
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-semibold text-white">
-                        {post.user?.full_name || post.user?.nickname}
-                      </h3>
-                      <span className="text-dark-400">•</span>
-                      <span className="text-dark-400 text-sm">
-                        @{post.user?.nickname}
-                      </span>
-                      <span className="text-dark-400">•</span>
-                      <div className="flex items-center space-x-1 text-dark-400 text-sm">
-                        <Clock className="w-3 h-3" />
-                        <span>{formatDate(post.created_at)}</span>
-                      </div>
-                    </div>
-
-                    {/* Conteúdo do Post */}
-                    <p className="text-dark-300 mb-4 whitespace-pre-wrap">{post.content}</p>
-
-                    {/* Imagem (se houver) */}
-                    {post.image_url && (
-                      <div className="mb-4 rounded-lg overflow-hidden">
+            return (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+              >
+                <Card className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="h-12 w-12 rounded-full overflow-hidden ring-1 ring-white/10 shrink-0 bg-gradient-to-r from-primary-500 to-secondary-500">
+                      {avatarUrl ? (
                         <img
-                          src={post.image_url}
-                          alt="Post image"
-                          className="w-full max-h-96 object-cover"
+                          src={avatarUrl}
+                          alt={authorName}
+                          className="h-full w-full object-cover"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                            e.currentTarget.parentElement.textContent = initials
+                          }}
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center text-lg font-semibold text-white">
+                          {initials}
+                        </span>
+                      )}
+                    </div>
 
-                    {/* Ações */}
-                    <div className="flex items-center space-x-6">
-                      <button
-                        onClick={() => handleLikePost(post.id)}
-                        className="flex items-center space-x-2 text-dark-400 hover:text-red-400 transition-colors"
+                    {/* Conteúdo */}
+                    <div className="flex-1 min-w-0">
+                      {/* Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-y-1 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-white text-sm truncate">
+                              {authorName}
+                            </h3>
+                            <p className="text-xs text-dark-400 truncate">
+                              @{authorHandle}
+                            </p>
+                          </div>
+                          {post.category && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-200 uppercase tracking-wide">
+                              {post.category}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-1 text-dark-400 text-xs">
+                          <Clock className="w-3 h-3" />
+                          <span>{formatDate(post.created_at)}</span>
+                        </div>
+                      </div>
+
+                      {/* Conteúdo do Post */}
+                      <p className="text-dark-300 mb-4 whitespace-pre-wrap">
+                        {post.content}
+                      </p>
+
+                      {/* Imagem (se houver) */}
+                      {post.image_url && (
+                        <div className="mb-4 rounded-lg overflow-hidden">
+                          <img
+                            src={post.image_url}
+                            alt="Post image"
+                            className="w-full max-h-96 object-cover"
+                          />
+                        </div>
+                      )}
+
+                      {/* Ações */}
+                      <div className="flex items-center space-x-6">
+                        <button
+                          onClick={() => handleLikePost(post.id)}
+                          className="flex items-center space-x-2 text-dark-400 hover:text-red-400 transition-colors"
+                        >
+                          <Heart className="w-4 h-4" />
+                          <span>{post.likes_count}</span>
+                        </button>
+                        <button className="flex items-center space-x-2 text-dark-400 hover:text-blue-400 transition-colors">
+                          <MessageSquare className="w-4 h-4" />
+                          <span>{post.comments_count}</span>
+                        </button>
+                        <button
+                          onClick={() => handleSharePost(post.id)}
+                          className="flex items-center space-x-2 text-dark-400 hover:text-green-400 transition-colors"
+                        >
+                          <Share2 className="w-4 h-4" />
+                          <span>{post.shares_count}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Menu */}
+                    <div className="relative">
+                      <button 
+                        onClick={() => setShowPostMenu(showPostMenu === post.id ? null : post.id)}
+                        className="text-dark-400 hover:text-white transition-colors"
                       >
-                        <Heart className="w-4 h-4" />
-                        <span>{post.likes_count}</span>
+                        <MoreHorizontal className="w-4 h-4" />
                       </button>
-                      <button className="flex items-center space-x-2 text-dark-400 hover:text-blue-400 transition-colors">
-                        <MessageSquare className="w-4 h-4" />
-                        <span>{post.comments_count}</span>
-                      </button>
-                      <button
-                        onClick={() => handleSharePost(post.id)}
-                        className="flex items-center space-x-2 text-dark-400 hover:text-green-400 transition-colors"
-                      >
-                        <Share2 className="w-4 h-4" />
-                        <span>{post.shares_count}</span>
-                      </button>
+                      
+                      {/* Dropdown Menu */}
+                      {showPostMenu === post.id && (
+                        <div className="absolute right-0 top-8 bg-dark-700 rounded-lg shadow-lg py-2 w-48 z-10">
+                          <button
+                            onClick={() => handleDeletePost(post.id)}
+                            className="w-full px-4 py-2 text-left text-red-400 hover:bg-dark-600 transition-colors flex items-center space-x-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>Deletar Post</span>
+                          </button>
+                          <button
+                            onClick={() => setShowPostMenu(null)}
+                            className="w-full px-4 py-2 text-left text-dark-400 hover:bg-dark-600 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-
-                  {/* Menu */}
-                  <div className="relative">
-                    <button 
-                      onClick={() => setShowPostMenu(showPostMenu === post.id ? null : post.id)}
-                      className="text-dark-400 hover:text-white transition-colors"
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                    
-                    {/* Dropdown Menu */}
-                    {showPostMenu === post.id && (
-                      <div className="absolute right-0 top-8 bg-dark-700 rounded-lg shadow-lg py-2 w-48 z-10">
-                        <button
-                          onClick={() => handleDeletePost(post.id)}
-                          className="w-full px-4 py-2 text-left text-red-400 hover:bg-dark-600 transition-colors flex items-center space-x-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          <span>Deletar Post</span>
-                        </button>
-                        <button
-                          onClick={() => setShowPostMenu(null)}
-                          className="w-full px-4 py-2 text-left text-dark-400 hover:bg-dark-600 transition-colors"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          ))
+                </Card>
+              </motion.div>
+            )
+          })
         )}
       </motion.div>
 

@@ -10,17 +10,14 @@ import {
   Zap
 } from 'lucide-react'
 
+import { isDemo, demoDashboardCards } from '@/utils/demoSeed'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
 // [CONNECTUS PATCH] import para missões v2
 import { DailyMissionCard } from '../components/missions/DailyMissionCard'
 // [CONNECTUS HACKATHON] import para Web3
-import WalletConnect from '../web3/components/WalletConnect'
-import TokenPanel from '../web3/components/TokenPanel'
-import MintForm from '../web3/components/MintForm'
-import NetworkHealth from '../web3/components/NetworkHealth'
-import { useWallet } from '../web3/useWallet'
+import VexaBox from '@/components/web3/VexaBox'
 
 const DashboardPage = () => {
   const { user } = useAuth()
@@ -28,16 +25,27 @@ const DashboardPage = () => {
   // [CONNECTUS PATCH] verificar feature flag para missões v2
   const featureMissions = String(import.meta.env.VITE_FEATURE_MISSIONS_V2).toLowerCase() === 'true'
   
-  // [CONNECTUS HACKATHON] Web3 wallet state
-  const { account, isSepolia } = useWallet()
-  
-  // [CONNECTUS HACKATHON] Feature flag para mint
-  const enableMint = import.meta.env.VITE_ENABLE_MINT === 'true'
+  const hasUserProgress = Boolean(
+    Number(user?.xp || 0) > 0 ||
+    Number(user?.tokens_available || 0) > 0 ||
+    Number(user?.missions_completed || 0) > 0
+  )
+
+  const useDemoMetrics = isDemo && !hasUserProgress
+
+  const metrics = useDemoMetrics
+    ? demoDashboardCards
+    : {
+        totalXP: Number(user?.xp || 0),
+        tokensDisponiveis: Number(user?.tokens_available || 0),
+        missoesCompletas: Number(user?.missions_completed || 0),
+        nivelAtual: Number(user?.level || 1)
+      }
 
   const stats = [
     {
       title: 'XP Total',
-      value: user?.xp?.toLocaleString() || 0,
+      value: Number(metrics.totalXP || 0).toLocaleString('pt-BR'),
       icon: Star,
       color: 'text-yellow-400',
       bgColor: 'bg-yellow-500/20',
@@ -45,7 +53,7 @@ const DashboardPage = () => {
     },
     {
       title: 'Tokens Disponíveis',
-      value: user?.tokens_available ? parseFloat(user.tokens_available).toFixed(2) : '0.00',
+      value: Number(metrics.tokensDisponiveis || 0).toFixed(2),
       icon: Coins,
       color: 'text-accent-400',
       bgColor: 'bg-accent-500/20',
@@ -53,7 +61,7 @@ const DashboardPage = () => {
     },
     {
       title: 'Missões Completadas',
-      value: user?.missions_completed || 0,
+      value: Number(metrics.missoesCompletas || 0).toLocaleString('pt-BR'),
       icon: Target,
       color: 'text-primary-400',
       bgColor: 'bg-primary-500/20',
@@ -61,13 +69,15 @@ const DashboardPage = () => {
     },
     {
       title: 'Nível Atual',
-      value: user?.level || 1,
+      value: metrics.nivelAtual || 1,
       icon: Trophy,
       color: 'text-secondary-400',
       bgColor: 'bg-secondary-500/20',
       change: '+1'
     }
   ]
+
+  const showDemoBanner = useDemoMetrics
 
   const quickActions = [
     {
@@ -102,6 +112,11 @@ const DashboardPage = () => {
 
   return (
     <div className="space-y-6">
+      {showDemoBanner && (
+        <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-100 text-xs px-3 py-2">
+          Visualização com <b>dados de demonstração</b>. No ambiente real, estes números vêm das suas ações.
+        </div>
+      )}
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -198,30 +213,8 @@ const DashboardPage = () => {
             Conecte sua carteira e interaja com tokens VEXA na blockchain
           </p>
         </div>
-        
-        {/* Network Health - Topo do painel */}
-        <div>
-          <NetworkHealth />
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Wallet Connect */}
-          <div>
-            <WalletConnect />
-          </div>
-          
-          {/* Token Panel */}
-          <div>
-            <TokenPanel />
-          </div>
-        </div>
-        
-        {/* Mint Form */}
-        {enableMint && (
-          <div>
-            <MintForm />
-          </div>
-        )}
+
+        <VexaBox />
       </motion.div>
 
       {/* Missões em destaque */}

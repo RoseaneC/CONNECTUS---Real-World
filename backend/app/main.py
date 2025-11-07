@@ -17,7 +17,7 @@ from app.core.config import settings
 from app.core.database import create_tables, SessionLocal, Base, engine, resolve_db_path_from_env, ensure_core_schema
 from app.models.user import User
 from app.core.auth import get_password_hash
-from app.routers import auth, posts, missions, chat, ranking, users, ai, profile, wallet, staking, system_flags, public_flags, avatars
+from app.routers import auth, posts, missions, chat, ranking, users, ai, profile, wallet, staking, system_flags, public_flags, avatars, impact
 from app.routers import missions_realtime, missions_ws
 # [WEB3 DEMO] Import router demo
 try:
@@ -131,6 +131,7 @@ app.include_router(staking.router)
 app.include_router(system_flags.router)
 app.include_router(public_flags.router)
 app.include_router(avatars.router)
+app.include_router(impact.router)
 
 # [WEB3 DEMO] import e registro robustos
 try:
@@ -214,6 +215,47 @@ def _ensure_demo_wallet_tables():
     except Exception as e:
         print(f"⚠️  ensure_demo_wallet_tables: {e}")
 
+def _ensure_impact_tables():
+    """Garante tabelas de Impact Score (idempotente)."""
+    try:
+        with SessionLocal() as db:
+            # Tabela impact_events
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS impact_events(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    type TEXT NOT NULL,
+                    weight REAL NOT NULL DEFAULT 0,
+                    metadata TEXT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(user_id) REFERENCES users(id),
+                    CHECK(weight >= 0)
+                )
+            """))
+            
+            # Índices
+            db.execute(text("CREATE INDEX IF NOT EXISTS idx_impact_events_user_id ON impact_events(user_id)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS idx_impact_events_type ON impact_events(type)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS idx_impact_events_user_timestamp ON impact_events(user_id, timestamp)"))
+            
+            # Tabela impact_scores
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS impact_scores(
+                    user_id INTEGER PRIMARY KEY,
+                    score REAL NOT NULL DEFAULT 0,
+                    breakdown TEXT,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(user_id) REFERENCES users(id)
+                )
+            """))
+            
+            db.execute(text("CREATE INDEX IF NOT EXISTS idx_impact_scores_user_id ON impact_scores(user_id)"))
+            
+            db.commit()
+            print("✅ Tabelas de Impact Score criadas/verificadas")
+    except Exception as e:
+        print(f"⚠️  ensure_impact_tables: {e}")
+
 def _ensure_min_schema_on_startup():
     """Garante colunas/ tabelas essenciais sem quebrar caso já existam."""
     try:
@@ -258,6 +300,7 @@ def _ensure_min_schema_on_startup():
 def _startup_min_schema():
     _ensure_min_schema_on_startup()
     _ensure_user_avatar_columns()
+    _ensure_impact_tables()
     # [WEB3 DEMO] Create demo wallet tables if flag enabled
     if os.getenv("ENABLE_WEB3_DEMO_MODE") == "1":
         _ensure_demo_wallet_tables()
