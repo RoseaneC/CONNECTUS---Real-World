@@ -1,15 +1,8 @@
 {
   "rewrites": [
     { 
-      "source": "/(.*)", 
-      "destination": "/index.html",
-      "has": [
-        {
-          "type": "header",
-          "key": "accept",
-          "value": "text/html"
-        }
-      ]
+      "source": "/((?!.*\\.(svg|png|jpg|jpeg|gif|ico|webp|woff|woff2|ttf|eot|css|js|json|map)).*)", 
+      "destination": "/index.html"
     }
   ]
 }
