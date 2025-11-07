@@ -16,6 +16,7 @@ import {
 
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
+import helpDrawing from '../assets/help-drawing.svg'
 
 const HomePage = () => {
   return (
@@ -78,7 +79,7 @@ const HomePage = () => {
                 <div className="bg-dark-800/80 backdrop-blur-sm rounded-2xl p-6 border border-dark-700 shadow-2xl">
                   <div className="bg-dark-900 rounded-lg overflow-hidden">
                     <img 
-                      src="/help-drawing.svg" 
+                      src={helpDrawing} 
                       alt="Connectus illustration" 
                       className="w-full h-auto object-contain"
                     />
