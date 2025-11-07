@@ -36,17 +36,28 @@ app = FastAPI(
 )
 
 # [CONNECTUS HOTFIX] Configurar CORS antes de importar rotas
+# SECURITY: Only allow specific origins - never use "*" with credentials
 origins = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
     "https://readyplayer.me",
 ]
 
-print(f"🌐 CORS configurado para origins: {origins}")
+# Add production origins from environment variable
+# Format: "https://your-app.vercel.app,https://another-domain.com"
+# IMPORTANT: Always specify exact domains, never use wildcards
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    # Split by comma and add each origin (strip whitespace)
+    additional_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+    origins.extend(additional_origins)
+    print(f"🔒 CORS: Added {len(additional_origins)} production origin(s) from ALLOWED_ORIGINS")
+
+print(f"🌐 CORS configurado para {len(origins)} origin(s): {origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins,  # Specific origins only - secure
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

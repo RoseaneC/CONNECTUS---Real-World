@@ -14,7 +14,11 @@ const useWebSocket = (roomId, token) => {
     if (!roomId || !token) return
 
     try {
-      const wsUrl = `ws://localhost:8000/ws/chat/${roomId}?token=${token}`
+      // Get API URL from environment, convert http/https to ws/wss
+      const apiUrl = import.meta.env?.VITE_API_URL || "http://127.0.0.1:8000"
+      const wsProtocol = apiUrl.startsWith('https') ? 'wss' : 'ws'
+      const wsHost = apiUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
+      const wsUrl = `${wsProtocol}://${wsHost}/ws/chat/${roomId}?token=${token}`
       const newSocket = new WebSocket(wsUrl)
 
       newSocket.onopen = () => {
