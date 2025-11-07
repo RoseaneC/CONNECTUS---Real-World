@@ -46,12 +46,13 @@ origins = [
 # Add production origins from environment variable
 # Format: "https://your-app.vercel.app,https://another-domain.com"
 # IMPORTANT: Always specify exact domains, never use wildcards
-allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+# NOTE: Using CORS_ALLOWED_ORIGINS to avoid conflict with Settings.ALLOWED_ORIGINS (which expects JSON)
+allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
 if allowed_origins_env:
     # Split by comma and add each origin (strip whitespace)
     additional_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
     origins.extend(additional_origins)
-    print(f"🔒 CORS: Added {len(additional_origins)} production origin(s) from ALLOWED_ORIGINS")
+    print(f"🔒 CORS: Added {len(additional_origins)} production origin(s) from CORS_ALLOWED_ORIGINS")
 
 print(f"🌐 CORS configurado para {len(origins)} origin(s): {origins}")
 
