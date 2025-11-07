@@ -106,6 +106,13 @@ export const AuthProvider = ({ children }) => {
       
     } catch (error) {
       console.error('Erro no login:', error)
+      console.error('API URL configurada:', import.meta.env?.VITE_API_URL || 'http://127.0.0.1:8000')
+      console.error('Erro completo:', {
+        message: error.message,
+        code: error.code,
+        response: error.response,
+        request: error.request
+      })
       
       let errorMessage = 'Erro ao fazer login'
       
@@ -118,7 +125,13 @@ export const AuthProvider = ({ children }) => {
       } else if (error.response?.status >= 500) {
         errorMessage = 'Erro interno do servidor. Tente novamente em alguns minutos.'
       } else if (!error.response) {
-        errorMessage = 'Erro de conexão. Verifique se o servidor está rodando.'
+        // Network error - no response from server
+        const apiUrl = import.meta.env?.VITE_API_URL || 'http://127.0.0.1:8000'
+        if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+          errorMessage = `Não foi possível conectar ao servidor (${apiUrl}). Verifique se o backend está rodando e se a URL está correta.`
+        } else {
+          errorMessage = `Erro de conexão: ${error.message || 'Servidor não respondeu'}. Verifique a configuração de VITE_API_URL.`
+        }
       }
       
       toast.error(errorMessage)
