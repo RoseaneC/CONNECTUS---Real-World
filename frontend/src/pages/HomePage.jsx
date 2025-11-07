@@ -24,7 +24,7 @@ const HomePage = () => {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 via-transparent to-accent-500/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="text-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -32,24 +32,22 @@ const HomePage = () => {
               className="space-y-8"
             >
               <div className="space-y-4">
-                <h1 className="text-5xl md:text-7xl font-bold text-white">
-                  <span className="bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">
+                <p className="text-base xl:text-lg font-medium tracking-wider text-white uppercase">
                     Connectus
-                  </span>
-                </h1>
-                <p className="text-xl md:text-2xl text-dark-300 max-w-3xl mx-auto">
-                  A plataforma social gamificada que transforma jovens em agentes de mudança
                 </p>
-                <p className="text-lg text-dark-400 max-w-2xl mx-auto">
+                <h1 className="text-4xl font-medium tracking-tight text-dark-300 max-w-3xl">
+                  A plataforma social gamificada que transforma jovens em agentes de mudança
+                </h1>
+                <p className="text-lg text-dark-400 max-w-2xl">
                   Conecte-se, aprenda, cresça e impacte o mundo através de missões, recompensas e uma comunidade vibrante.
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/register">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link to="/register" className="no-underline">
                   <Button
                     size="lg"
-                    className="px-8 py-4 text-lg"
+                    className="px-8 py-4 text-lg flex items-center cursor-pointer"
                     variant="primary"
                   >
                     Começar Jornada
@@ -57,15 +55,35 @@ const HomePage = () => {
                   </Button>
                 </Link>
                 
-                <Link to="/login">
+                <Link to="/login" className="no-underline">
                   <Button
                     size="lg"
-                    className="px-8 py-4 text-lg"
+                    className="px-8 py-4 text-lg cursor-pointer"
                     variant="secondary"
                   >
                     Já tenho conta
                   </Button>
                 </Link>
+              </div>
+            </motion.div>
+
+            {/* Image Frame */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="hidden lg:flex items-center justify-center"
+            >
+              <div className="relative w-full max-w-lg">
+                <div className="bg-dark-800/80 backdrop-blur-sm rounded-2xl p-6 border border-dark-700 shadow-2xl">
+                  <div className="bg-dark-900 rounded-lg overflow-hidden">
+                    <img 
+                      src="/help-drawing.svg" 
+                      alt="Connectus illustration" 
+                      className="w-full h-auto object-contain"
+                    />
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -166,10 +184,10 @@ const HomePage = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register">
+              <Link to="/register" className="no-underline">
                 <Button
                   size="lg"
-                  className="px-8 py-4 text-lg"
+                  className="px-8 py-4 text-lg flex items-center cursor-pointer"
                   variant="primary"
                 >
                   Criar Conta Gratuita
@@ -177,10 +195,10 @@ const HomePage = () => {
                 </Button>
               </Link>
               
-              <Link to="/login">
+              <Link to="/login" className="no-underline">
                 <Button
                   size="lg"
-                  className="px-8 py-4 text-lg"
+                  className="px-8 py-4 text-lg cursor-pointer"
                   variant="ghost"
                 >
                   Fazer Login

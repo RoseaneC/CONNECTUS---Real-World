@@ -120,13 +120,15 @@ const RegisterPage = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Nickname */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-dark-200">
+                    <label htmlFor="nickname" className="block text-sm font-medium text-dark-200">
                 Nickname * <span className="text-xs text-dark-400">(único)</span>
                     </label>
               <div className="relative">
                 <Input
+                  id="nickname"
                   type="text"
                   placeholder="seu_nickname"
+                  tabIndex={1}
                   {...register('nickname', {
                     required: 'Nickname é obrigatório',
                     minLength: {
@@ -146,19 +148,21 @@ const RegisterPage = () => {
                   variant="cyber"
                   className="pl-10"
                 />
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
               </div>
             </div>
 
             {/* Nome Completo */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-dark-200">
+              <label htmlFor="full_name" className="block text-sm font-medium text-dark-200">
                 Nome Completo
               </label>
               <div className="relative">
                 <Input
+                  id="full_name"
                   type="text"
                   placeholder="Seu nome completo"
+                  tabIndex={2}
                   {...register('full_name', {
                     maxLength: {
                       value: 100,
@@ -169,19 +173,21 @@ const RegisterPage = () => {
                   variant="cyber"
                   className="pl-10"
                 />
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
               </div>
             </div>
 
                 {/* Email */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-dark-200">
+              <label htmlFor="email" className="block text-sm font-medium text-dark-200">
                 Email
               </label>
               <div className="relative">
                 <Input
+                  id="email"
                   type="email"
                   placeholder="seu@email.com"
+                  tabIndex={3}
                   {...register('email', {
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -192,19 +198,21 @@ const RegisterPage = () => {
                   variant="cyber"
                   className="pl-10"
                 />
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
               </div>
             </div>
 
             {/* Senha */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-dark-200">
+              <label htmlFor="password" className="block text-sm font-medium text-dark-200">
                 Senha *
               </label>
               <div className="relative">
                 <Input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Mínimo 6 caracteres"
+                  tabIndex={4}
                   {...register('password', {
                     required: 'Senha é obrigatória',
                     minLength: {
@@ -220,11 +228,13 @@ const RegisterPage = () => {
                   variant="cyber"
                   className="pl-10 pr-10"
                 />
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-dark-300 transition-colors"
+                  tabIndex={5}
+                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-dark-300 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/20 rounded"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -233,13 +243,15 @@ const RegisterPage = () => {
 
             {/* Confirmar Senha */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-dark-200">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-dark-200">
                 Confirmar Senha *
               </label>
               <div className="relative">
                 <Input
+                  id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   placeholder="Confirme sua senha"
+                  tabIndex={6}
                   {...register('confirmPassword', {
                     required: 'Confirmação de senha é obrigatória',
                     validate: value => 
@@ -249,11 +261,13 @@ const RegisterPage = () => {
                   variant="cyber"
                   className="pl-10 pr-10"
                 />
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
                 <button
                     type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-dark-300 transition-colors"
+                  tabIndex={7}
+                  aria-label={showConfirmPassword ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-dark-300 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/20 rounded"
                 >
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -262,13 +276,15 @@ const RegisterPage = () => {
 
             {/* Bio */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-dark-200">
+              <label htmlFor="bio" className="block text-sm font-medium text-dark-200">
                 Bio <span className="text-xs text-dark-400">(opcional)</span>
               </label>
               <div className="relative">
                 <Input
+                  id="bio"
                   type="text"
                   placeholder="Conte um pouco sobre você..."
+                  tabIndex={8}
                   {...register('bio', {
                     maxLength: {
                       value: 500,
@@ -279,7 +295,7 @@ const RegisterPage = () => {
                   variant="cyber"
                   className="pl-10"
                 />
-                <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
               </div>
             </div>
 
@@ -288,7 +304,8 @@ const RegisterPage = () => {
               type="submit"
               loading={loading || isSubmitting}
               disabled={loading || isSubmitting}
-              className="w-full py-3"
+              tabIndex={9}
+              className="w-full py-3 flex items-center justify-center cursor-pointer"
                     variant="primary"
                   >
               {loading || isSubmitting ? 'Criando conta...' : 'Criar Conta'}
@@ -302,7 +319,8 @@ const RegisterPage = () => {
               Já tem uma conta?{' '}
               <Link
                 to="/login"
-                className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
+                tabIndex={10}
+                className="text-primary-400 hover:text-primary-300 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/20 rounded"
               >
                 Fazer login
               </Link>

@@ -98,13 +98,15 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Nickname */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-dark-200">
+              <label htmlFor="nickname" className="block text-sm font-medium text-dark-200">
                 Nickname *
               </label>
               <div className="relative">
                 <Input
+                  id="nickname"
                   type="text"
                   placeholder="seu_nickname"
+                  tabIndex={1}
                   {...register('nickname', {
                     required: 'Nickname é obrigatório',
                     minLength: {
@@ -124,19 +126,21 @@ const LoginPage = () => {
                   variant="cyber"
                   className="pl-10"
                 />
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
               </div>
             </div>
 
             {/* Senha */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-dark-200">
+              <label htmlFor="password" className="block text-sm font-medium text-dark-200">
                 Senha *
               </label>
               <div className="relative">
                 <Input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Sua senha"
+                  tabIndex={2}
                   {...register('password', {
                     required: 'Senha é obrigatória',
                     minLength: {
@@ -148,11 +152,13 @@ const LoginPage = () => {
                   variant="cyber"
                   className="pl-10 pr-10"
                 />
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-dark-300 transition-colors"
+                  tabIndex={3}
+                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-dark-300 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/20 rounded"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -163,7 +169,8 @@ const LoginPage = () => {
             <div className="text-right">
               <a
                 href="#"
-                className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
+                tabIndex={4}
+                className="text-sm text-primary-400 hover:text-primary-300 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/20 rounded cursor-pointer"
               >
                 Esqueci minha senha
               </a>
@@ -174,7 +181,8 @@ const LoginPage = () => {
               type="submit"
               loading={loading || isSubmitting}
               disabled={loading || isSubmitting}
-              className="w-full py-3"
+              tabIndex={5}
+              className="w-full py-3 flex items-center justify-center cursor-pointer"
               variant="primary"
             >
               {loading || isSubmitting ? 'Entrando...' : 'Entrar no Connectus'}
@@ -188,7 +196,8 @@ const LoginPage = () => {
               Não tem uma conta?{' '}
               <Link
                 to="/register"
-                className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
+                tabIndex={6}
+                className="text-primary-400 hover:text-primary-300 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/20 rounded"
               >
                 Criar conta
               </Link>
