@@ -18,6 +18,8 @@ import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import helpDrawing from '../assets/help-drawing.svg'
 
+// Force Vercel redeploy
+
 const HomePage = () => {
   return (
     <div className="min-h-screen bg-gray-900">
