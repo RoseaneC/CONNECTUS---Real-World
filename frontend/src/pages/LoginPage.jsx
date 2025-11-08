@@ -63,8 +63,11 @@ const LoginPage = () => {
     try {
       const result = await login(data.nickname, data.password)
       
-      if (result.success) {
+      if (result?.success) {
         navigate('/dashboard')
+      } else {
+        // Erro já foi tratado no AuthContext com toast
+        // Não fazer nada aqui para evitar refresh
       }
     } catch (error) {
       console.error('Erro no login:', error)
@@ -95,7 +98,11 @@ const LoginPage = () => {
           </div>
 
           {/* Formulário */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form 
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            className="space-y-6"
+          >
             {/* Nickname */}
             <div className="space-y-2">
               <label htmlFor="nickname" className="block text-sm font-medium text-dark-200">
@@ -167,13 +174,17 @@ const LoginPage = () => {
 
             {/* Esqueci minha senha */}
             <div className="text-right">
-              <a
-                href="#"
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  toast.info('Funcionalidade em desenvolvimento')
+                }}
                 tabIndex={4}
-                className="text-sm text-primary-400 hover:text-primary-300 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/20 rounded cursor-pointer"
+                className="text-sm text-primary-400 hover:text-primary-300 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/20 rounded cursor-pointer bg-transparent border-none"
               >
                 Esqueci minha senha
-              </a>
+              </button>
             </div>
 
             {/* Botão de submit */}
