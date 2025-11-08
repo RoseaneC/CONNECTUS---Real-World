@@ -2,9 +2,11 @@
 Rotas de autenticação para Connectus
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from datetime import timedelta
+import logging
 
 from app.core.database import get_db
 from app.core.auth import (
@@ -18,6 +20,11 @@ from app.core.auth import (
 from app.core.config import settings
 from app.schemas.auth import UserCreate, UserLogin, UserResponse, Token, UserProfile, RefreshTokenRequest
 from app.models.user import User
+from app.utils.auth_cookies import set_auth_cookie, clear_auth_cookie
+
+# Logger específico para autenticação
+logger = logging.getLogger("auth")
+logger.setLevel(logging.INFO)
 
 router = APIRouter(prefix="/auth", tags=["autenticação"])
 
@@ -95,16 +102,22 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
     """
     Fazer login do usuário
     """
+    logger.info(f"[AUTH] login_try ident={login_data.nickname}")
+    
     # Autenticar usuário
     user = authenticate_user(db, login_data.nickname, login_data.password)
     if not user:
+        logger.warning(f"[AUTH] login_fail reason=user_not_found ident={login_data.nickname}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciais inválidas"
         )
     
+    logger.info(f"[AUTH] login_user_found user_id={user.id} nickname={user.nickname} is_active={user.is_active}")
+    
     # Verificar se usuário está ativo
     if not user.is_active:
+        logger.warning(f"[AUTH] login_fail reason=user_inactive user_id={user.id}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário inativo"
@@ -124,17 +137,34 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
         expires_delta=refresh_token_expires
     )
     
+    logger.info(f"[AUTH] login_token_created user_id={user.id} token_len={len(access_token)}")
+    
     # Atualizar último login
     from datetime import datetime
     user.last_login = datetime.utcnow()
     db.commit()
     
-    return {
+    # Criar resposta JSON
+    response = JSONResponse(content={
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
         "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    }
+    })
+    
+    # Configurar cookie HttpOnly com configuração condicional por ambiente
+    set_auth_cookie(response, access_token)
+    
+    # Verificar se cookie foi setado
+    cookie_set = "connectus_access_token" in [c.split("=")[0] for c in response.headers.get("set-cookie", "").split(", ")]
+    if cookie_set:
+        logger.info(f"[AUTH] login_cookie_set user_id={user.id} success=True")
+    else:
+        logger.warning(f"[AUTH] login_cookie_set user_id={user.id} success=False - cookie não encontrado nos headers")
+    
+    logger.info(f"[AUTH] login_success user_id={user.id} nickname={user.nickname}")
+    
+    return response
 
 @router.post("/refresh", response_model=Token)
 async def refresh_token(refresh_data: RefreshTokenRequest, db: Session = Depends(get_db)):
@@ -207,9 +237,14 @@ async def get_current_user_info(current_user: User = Depends(get_current_active_
 @router.post("/logout")
 async def logout():
     """
-    Fazer logout (frontend deve remover token)
+    Fazer logout - remove cookie e token
     """
-    return {"message": "Logout realizado com sucesso"}
+    response = JSONResponse(content={"ok": True, "message": "Logout realizado com sucesso"})
+    
+    # Deletar cookie com configuração condicional por ambiente
+    clear_auth_cookie(response)
+    
+    return response
 
 @router.get("/verify-token")
 async def verify_token(current_user: User = Depends(get_current_active_user)):
@@ -217,3 +252,17 @@ async def verify_token(current_user: User = Depends(get_current_active_user)):
     Verificar se token é válido
     """
     return {"valid": True, "user_id": current_user.id}
+
+@router.get("/debug-cookie")
+async def debug_cookie(request: Request):
+    """
+    Endpoint temporário para verificar se o cookie foi definido corretamente.
+    Serve apenas para testar se o cookie chega ao backend.
+    """
+    cookie_value = request.cookies.get("connectus_access_token")
+    logger.info(f"[AUTH] debug_cookie cookie_present={cookie_value is not None} cookie_len={len(cookie_value) if cookie_value else 0}")
+    return {
+        "cookie": cookie_value,
+        "cookie_present": cookie_value is not None,
+        "cookie_length": len(cookie_value) if cookie_value else 0
+    }

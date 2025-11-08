@@ -19,8 +19,8 @@ SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-# Security scheme
-security = HTTPBearer()
+# Security scheme (opcional para permitir cookie fallback)
+security = HTTPBearer(auto_error=False)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verificar senha usando SHA256"""
@@ -83,40 +83,55 @@ def get_user_by_identifier(db: Session, identifier: str) -> Optional[User]:
 
 def authenticate_user(db: Session, nickname: str, password: str) -> Optional[User]:
     """[CONNECTUS HOTFIX] Autenticar usuário com debug detalhado (case-insensitive)"""
-    print(f"🔍 DEBUG AUTH: Tentando autenticar identifier: {nickname}")
+    import logging
+    auth_logger = logging.getLogger("auth")
+    
+    auth_logger.info(f"[AUTH] authenticate_user identifier={nickname}")
     
     # Usar busca case-insensitive por nickname ou email
     user = get_user_by_identifier(db, nickname)
     if not user:
-        print(f"❌ DEBUG AUTH: Usuário '{nickname}' não encontrado (case-insensitive)")
+        auth_logger.warning(f"[AUTH] authenticate_user_fail reason=user_not_found identifier={nickname}")
         return None
     
-    print(f"✅ DEBUG AUTH: Usuário encontrado - ID: {user.id}, Ativo: {user.is_active}")
-    print(f"🔍 DEBUG AUTH: Hash no banco: {user.password_hash[:20]}...")
-    
-    password_hash = get_password_hash(password)
-    print(f"🔍 DEBUG AUTH: Hash da senha enviada: {password_hash[:20]}...")
+    auth_logger.info(f"[AUTH] authenticate_user_found user_id={user.id} is_active={user.is_active}")
     
     if not verify_password(password, user.password_hash):
-        print(f"❌ DEBUG AUTH: Senha incorreta para {nickname}")
+        auth_logger.warning(f"[AUTH] authenticate_user_fail reason=invalid_password user_id={user.id}")
         return None
     
-    print(f"✅ DEBUG AUTH: Autenticação bem-sucedida para {nickname}")
+    auth_logger.info(f"[AUTH] authenticate_user_success user_id={user.id}")
     return user
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ) -> User:
-    """Obter usuário atual a partir do token JWT"""
+    """Obter usuário atual a partir do token JWT (cookie ou Authorization header)"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Not authenticated",
         headers={"WWW-Authenticate": "Bearer"},
     )
     
+    token = None
+    
+    # Tentar obter token do cookie primeiro
+    cookie_token = request.cookies.get("connectus_access_token")
+    if cookie_token:
+        token = cookie_token
+    # Fallback para Authorization header
+    elif credentials:
+        try:
+            token = credentials.credentials
+        except Exception:
+            pass
+    
+    if not token:
+        raise credentials_exception
+    
     try:
-        token = credentials.credentials
         payload = verify_token(token)
         if payload is None:
             raise credentials_exception

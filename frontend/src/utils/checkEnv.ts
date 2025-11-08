@@ -16,8 +16,8 @@ function validateAddress(label: string, raw?: string): boolean {
     return false;
   }
   try {
-    // Normaliza para lowercase antes de validar (getAddress corrige o checksum)
-    const normalized = v.toLowerCase();
+    // Normaliza para lowercase antes de validar (evita erro de checksum no ethers v6)
+    const normalized = v.toLowerCase().trim();
     const address = getAddress(normalized);
     console.info(`[CONFIG] ✅ ${label} válido: ${address}`);
     return true;

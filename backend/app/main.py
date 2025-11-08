@@ -2,13 +2,23 @@
 Aplicação principal do Connectus
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 import uvicorn
 import os
+import logging
+import time
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
 from dotenv import load_dotenv
+
+# Configurar logging básico
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # [WEB3 DEMO] Load env vars early
 load_dotenv()
@@ -18,7 +28,7 @@ from app.core.database import create_tables, SessionLocal, Base, engine, resolve
 from app.models.user import User
 from app.core.auth import get_password_hash
 from app.routers import auth, posts, missions, chat, ranking, users, ai, profile, wallet, staking, system_flags, public_flags, avatars, impact
-from app.routers import missions_realtime, missions_ws
+from app.routers import missions_realtime, missions_ws, missions_v2
 # [WEB3 DEMO] Import router demo
 try:
     from app.routers import wallet_demo as _wallet_demo_module
@@ -37,40 +47,102 @@ app = FastAPI(
 
 # [CONNECTUS HOTFIX] Configurar CORS antes de importar rotas
 # SECURITY: Only allow specific origins - never use "*" with credentials
-origins = [
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-    "https://readyplayer.me",
-    # Production origins (hardcoded for reliability)
-    "https://connectus-real-world.vercel.app",
-    "https://connectus-real-world-production.up.railway.app",  # Backend URL (self-reference for health checks)
-]
+import json
 
-# Add additional production origins from environment variable
-# Format: "https://your-app.vercel.app,https://another-domain.com"
-# IMPORTANT: Always specify exact domains, never use wildcards
-# NOTE: Using CORS_ALLOWED_ORIGINS to avoid conflict with Settings.ALLOWED_ORIGINS (which expects JSON)
-allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
-if allowed_origins_env:
-    # Split by comma and add each origin (strip whitespace)
-    additional_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
-    # Remove duplicates
-    for origin in additional_origins:
-        if origin not in origins:
-            origins.append(origin)
-    print(f"🔒 CORS: Added {len(additional_origins)} additional origin(s) from CORS_ALLOWED_ORIGINS")
+FRONTEND_PROD = os.getenv("FRONTEND_URL", "https://connectus-real-world.vercel.app")
+DEFAULT_ORIGINS = {"http://127.0.0.1:5173", "http://localhost:5173", FRONTEND_PROD}
 
-print(f"🌐 CORS configurado para {len(origins)} origin(s):")
-for i, origin in enumerate(origins, 1):
-    print(f"   {i}. {origin}")
+# Parse CORS_ORIGINS - aceita JSON array ou string separada por vírgulas
+raw = os.getenv("CORS_ORIGINS", "")
+extra = set()
+if raw:
+    try:
+        # Tenta parsear como JSON primeiro (ex: '["http://a","http://b"]')
+        parsed = json.loads(raw)
+        if isinstance(parsed, list):
+            extra = set(map(str, parsed))
+        else:
+            extra = {str(parsed)}
+    except Exception:
+        # Fallback: aceita 'http://a,http://b' e remove colchetes/aspas soltas
+        extra = {s.strip().strip('[]"\'') for s in raw.split(",") if s.strip()}
+
+ALLOWED = list(DEFAULT_ORIGINS | extra)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Specific origins only - secure
+    allow_origins=ALLOWED,
+    allow_origin_regex=r"https://.*\.vercel\.app$",  # Cobre previews do Vercel
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+print("CORS ALLOW_ORIGINS:", ALLOWED)
+
+# [DIAGNOSTICO LOGIN] Middleware para logar requisições de login
+class LogLoginRequestsMiddleware(BaseHTTPMiddleware):
+    """Middleware para logar requisições POST para /auth/login"""
+    
+    async def dispatch(self, request: StarletteRequest, call_next):
+        # Verificar se é POST para /auth/login
+        if request.method == "POST" and request.url.path == "/auth/login":
+            start_time = time.perf_counter()
+            
+            # Obter IP do cliente
+            client_ip = request.client.host if request.client else "unknown"
+            
+            # Ler body preservando para uso posterior
+            body_bytes = b""
+            async for chunk in request.stream():
+                body_bytes += chunk
+            
+            # Log do body (truncado para não expor senha completa)
+            try:
+                import json
+                body_dict = json.loads(body_bytes.decode())
+                # Truncar senha para segurança
+                if "password" in body_dict:
+                    body_dict["password"] = "*" * min(len(body_dict["password"]), 8)
+                body_str = json.dumps(body_dict)
+            except:
+                body_str = body_bytes[:200].decode('utf-8', errors='ignore')
+            
+            # Headers principais
+            headers_dict = {
+                "origin": request.headers.get("origin", "N/A"),
+                "referer": request.headers.get("referer", "N/A"),
+                "user-agent": request.headers.get("user-agent", "N/A")[:100],
+                "content-type": request.headers.get("content-type", "N/A"),
+            }
+            
+            # Log da requisição
+            logging.info(f"[AUTH] login_request method={request.method} path={request.url.path} ip={client_ip}")
+            logging.info(f"[AUTH] login_request body={body_str[:200]}")
+            logging.info(f"[AUTH] login_request headers={headers_dict}")
+            
+            # Criar novo request com body preservado
+            async def receive():
+                return {"type": "http.request", "body": body_bytes}
+            
+            request._receive = receive
+            
+            # Processar requisição
+            response = await call_next(request)
+            
+            # Calcular duração
+            duration = time.perf_counter() - start_time
+            
+            # Log da resposta
+            logging.info(f"[AUTH] login_response status={response.status_code} duration={duration:.2f}s")
+            
+            return response
+        
+        # Para outras requisições, apenas processar normalmente
+        return await call_next(request)
+
+# Adicionar middleware de log de login (depois do CORS)
+app.add_middleware(LogLoginRequestsMiddleware)
 
 # [CONNECTUS PATCH] Diagnóstico seguro da OpenAI no startup
 from app.core.config import settings, _mask_key, _key_source
@@ -121,6 +193,22 @@ def maybe_seed_dev_user():
         # não derrubar a app por seed; apenas logar
         print(f"⚠️ [SEED] falhou: {e}")
 
+# [MISSIONS_V2] Seed de missões diárias v2
+@app.on_event("startup")
+def seed_missions_v2():
+    """Seed de missões diárias v2 (aditivo, resiliente)"""
+    try:
+        from app.db.seed_missions_v2 import seed_daily_missions
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            seed_daily_missions(db)
+        finally:
+            db.close()
+    except Exception as e:
+        # não derrubar a app por seed; apenas logar
+        print(f"⚠️ [MISSIONS_V2] Seed falhou: {e}")
+
 # Evitar redirect automático 307 por barra final
 # (Starlette/FastAPI: desliga o redirect e nós oferecemos as duas rotas)
 try:
@@ -152,6 +240,7 @@ app.include_router(system_flags.router)
 app.include_router(public_flags.router)
 app.include_router(avatars.router)
 app.include_router(impact.router)
+app.include_router(missions_v2.router)
 
 # [WEB3 DEMO] import e registro robustos
 try:
@@ -338,6 +427,16 @@ async def root():
 async def health_check():
     """Verificação de saúde da API"""
     return {"status": "ok"}
+
+@app.get("/debug/cookie")
+async def read_cookie(request: Request):
+    """Endpoint temporário para verificar se o cookie chega (remover após validação)"""
+    cookie_value = request.cookies.get("connectus_access_token")
+    return {
+        "cookie": cookie_value,
+        "cookie_present": cookie_value is not None,
+        "all_cookies": list(request.cookies.keys())
+    }
 
 @app.get("/cors-info")
 async def cors_info():

@@ -147,10 +147,15 @@ Verifique se a documentação Swagger carrega.
 
 ### 5. Ajustar variáveis do frontend para produção
 
-No repositório GitHub (ou diretamente na Vercel), garanta um `.env.production` ou use variáveis de ambiente:
+**IMPORTANTE:** O frontend usa `VITE_API_URL` para todas as ambientes. Configure valores diferentes no Vercel:
 
+**No Vercel (Settings → Environment Variables):**
+- **Development**: `VITE_API_URL=http://127.0.0.1:8000`
+- **Preview**: `VITE_API_URL=https://your-railway-backend.up.railway.app`
+- **Production**: `VITE_API_URL=https://your-railway-backend.up.railway.app`
+
+**Outras variáveis (mesmas para todos os ambientes):**
 ```
-VITE_API_URL=https://<url-backend>
 VITE_WITH_CREDENTIALS=true
 VITE_FEATURE_RPM=true
 VITE_RPM_SUBDOMAIN=demo
